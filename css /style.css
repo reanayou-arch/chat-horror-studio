@@ -2,22 +2,29 @@
   box-sizing: border-box;
 }
 
+/* КРИТИЧНО для Android */
+html, body {
+  height: 100%;
+  background: linear-gradient(180deg, #0b0b12, #050507);
+}
+
 body {
   margin: 0;
-  background: linear-gradient(180deg, #0b0b12, #050507);
   color: #eaeaf0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* Контейнер приложения */
 .app {
   max-width: 420px;
   height: 100vh;
   margin: auto;
   display: flex;
   flex-direction: column;
+  background: linear-gradient(180deg, #0b0b12, #050507);
 }
 
-/* Header */
+/* Верхняя панель */
 .header {
   padding: 18px;
   font-size: 20px;
@@ -26,13 +33,14 @@ body {
   border-bottom: 1px solid #26263a;
 }
 
-/* Main screen */
+/* Основная область */
 .screen {
   flex: 1;
   padding: 18px;
+  overflow-y: auto;
 }
 
-/* Buttons */
+/* Кнопки */
 button {
   width: 100%;
   padding: 14px;
@@ -46,7 +54,7 @@ button {
   box-shadow: 0 10px 25px rgba(120,120,255,0.35);
 }
 
-/* Story card */
+/* Карточка истории */
 .story {
   background: #141421;
   border: 1px solid #26263a;
@@ -66,7 +74,7 @@ button {
   margin: 6px 0 10px;
 }
 
-/* Empty state */
+/* Пусто */
 .empty {
   margin-top: 60px;
   text-align: center;
