@@ -1,24 +1,106 @@
 <!DOCTYPE html>
-<!-- UNIQUE_BUILD_20260124_ABCXYZ -->
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chat Horror Studio</title>
 
-  <!-- CSS (с обходом кеша) -->
-  <link rel="stylesheet" href="./css/style.css">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1b1f3b, #0b0e1a);
+      color: #e6e6eb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .app {
+      max-width: 420px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: rgba(10, 12, 25, 0.85);
+    }
+
+    header {
+      padding: 18px;
+      font-size: 22px;
+      font-weight: 700;
+      background: linear-gradient(180deg, #1a1d35, #0d1020);
+      border-bottom: 1px solid #2a2f55;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    main {
+      flex: 1;
+      padding: 18px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: linear-gradient(180deg, #5b63ff, #3f46cc);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .empty {
+      margin-top: 20px;
+      opacity: 0.7;
+      font-size: 16px;
+    }
+
+    .story {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #181c36, #10132a);
+      border: 1px solid #2a2f55;
+    }
+
+    .story h3 {
+      margin: 0 0 6px;
+    }
+
+    .play {
+      margin-top: 10px;
+      background: linear-gradient(180deg, #2ecc71, #1e9e55);
+    }
+  </style>
 </head>
+
 <body>
-
   <div class="app">
-    <header class="header">
-      Chat Horror Studio
-    </header>
+    <header>Chat Horror Studio</header>
 
-    <main class="screen" id="screen"></main>
+    <main>
+      <button class="btn">➕ Новая история</button>
+
+      <div class="story">
+        <h3>Тест</h3>
+        <div>1 сообщение</div>
+        <button class="btn play">▶ Играть</button>
+      </div>
+
+      <div class="empty">Историй пока нет</div>
+    </main>
   </div>
-
-  <script type="module" src="ja/app.js"></script>
 </body>
 </html>
