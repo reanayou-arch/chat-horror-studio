@@ -39,6 +39,9 @@ body{
   display:flex;
   gap:8px;
 }
+.player{
+  align-self:flex-end;
+}
 .avatar{
   width:36px;
   height:36px;
@@ -55,16 +58,13 @@ body{
   padding:10px 14px;
   max-width:75%;
 }
+.player .bubble{
+  background:#2563eb;
+}
 .name{
   font-size:12px;
   opacity:.7;
   margin-bottom:4px;
-}
-.player{
-  align-self:flex-end;
-}
-.player .bubble{
-  background:#2563eb;
 }
 .input{
   display:flex;
@@ -106,42 +106,35 @@ button{
 </div>
 
 <script>
+const chat = document.getElementById("chat");
+const input = document.getElementById("input");
+
 const characters = [
   {
     name:"Вика",
-    mood:"anxious",
-    replies:{
-      fear:[
-        "Мне тоже страшно…",
-        "Не говори так, пожалуйста…",
-        "Я стараюсь держаться…"
-      ],
-      help:[
-        "Я не знаю как помочь…",
-        "Может, кто-то ещё ответит?",
-      ]
-    }
+    avatar:"В",
+    auto:[
+      "Почему он молчит?..",
+      "Мне здесь не нравится…",
+      "Вы тоже это слышали?"
+    ]
   },
   {
     name:"Саша",
-    mood:"cold",
-    replies:{
-      fear:[
-        "Паника не поможет.",
-        "Соберись.",
-        "Страх — плохой советчик."
-      ],
-      help:[
-        "Говори конкретно.",
-        "Что именно ты хочешь?"
-      ]
-    }
+    avatar:"С",
+    auto:[
+      "Связь нестабильна.",
+      "Нужно сохранять спокойствие.",
+      "Это место странное."
+    ]
   }
 ];
 
+let lastPlayerAction = Date.now();
+
+/* === UI === */
 function addMessage(name,text,isPlayer=false){
-  const chat=document.getElementById("chat");
-  chat.innerHTML+=`
+  chat.innerHTML += `
     <div class="message ${isPlayer?"player":""}">
       <div class="avatar">${name[0]}</div>
       <div class="bubble">
@@ -150,43 +143,52 @@ function addMessage(name,text,isPlayer=false){
       </div>
     </div>
   `;
-  chat.scrollTop=99999;
+  chat.scrollTop = 99999;
 }
 
+/* === PLAYER === */
 function send(){
-  const input=document.getElementById("input");
-  const text=input.value.trim();
-  if(!text)return;
-  input.value="";
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = "";
+  lastPlayerAction = Date.now();
   addMessage("Вы",text,true);
-
-  react(text.toLowerCase());
 }
 
-function react(text){
-  const typing=document.createElement("div");
-  typing.className="typing";
-  typing.innerText="Кто-то печатает…";
+/* === AUTONOMOUS MESSAGES === */
+function autoMessage(){
+  const now = Date.now();
+
+  // если игрок молчит больше 15 секунд
+  if(now - lastPlayerAction < 15000) return;
+
+  const char = characters[Math.floor(Math.random()*characters.length)];
+  const msg = char.auto[Math.floor(Math.random()*char.auto.length)];
+
+  showTyping(char.name, () => {
+    addMessage(char.name, msg);
+    lastPlayerAction = Date.now(); // сбрасываем, чтобы не спамили
+  });
+}
+
+/* === TYPING EFFECT === */
+function showTyping(name, callback){
+  const typing = document.createElement("div");
+  typing.className = "typing";
+  typing.innerText = `${name} печатает…`;
   chat.appendChild(typing);
-  chat.scrollTop=99999;
+  chat.scrollTop = 99999;
 
   setTimeout(()=>{
     typing.remove();
-
-    let type="neutral";
-    if(text.includes("страш")) type="fear";
-    if(text.includes("помог")) type="help";
-
-    const char=characters[Math.floor(Math.random()*characters.length)];
-    const replies=char.replies[type];
-    if(!replies) return;
-
-    const reply=replies[Math.floor(Math.random()*replies.length)];
-    addMessage(char.name,reply);
-  },3000+Math.random()*3000);
+    callback();
+  }, 2000 + Math.random()*3000);
 }
 
+/* === START === */
 addMessage("Вика","Ты здесь?..");
+
+setInterval(autoMessage, 5000);
 </script>
 </body>
 </html>
