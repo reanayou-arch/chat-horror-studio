@@ -4,25 +4,133 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Игра</title>
-  <link rel="stylesheet" href="css/style.css?v=FINAL">
+  <style>
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #0b1220, #02040a);
+      color: #e6e6eb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .app {
+      max-width: 420px;
+      margin: auto;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      white-space: pre-line;
+    }
+
+    .input {
+      display: flex;
+      padding: 12px;
+      border-top: 1px solid #232332;
+      background: #050814;
+    }
+
+    input {
+      flex: 1;
+      background: #0e1325;
+      border: 1px solid #2a2f4a;
+      border-radius: 10px;
+      color: #fff;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      margin-left: 8px;
+      background: #1f2a52;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 16px;
+    }
+  </style>
 </head>
 <body>
 
-  <div class="app">
-    <header class="header">История</header>
-    <main class="screen" id="screen"></main>
+<div class="app">
+  <div class="chat" id="chat"></div>
+
+  <div class="input">
+    <input id="userInput" placeholder="Введите номер выбора">
+    <button onclick="send()">OK</button>
   </div>
+</div>
 
-  <script>
-    const screen = document.getElementById("screen");
-    const stories = JSON.parse(localStorage.getItem("stories") || "[]");
-    const index = localStorage.getItem("playIndex");
-    const story = stories[index];
+<script>
+const storyText = `
+Вика: Ты слышишь шаги за дверью…
 
-    screen.innerHTML = story.lines
-      .map(l => `<div class="story">${l.text}</div>`)
-      .join("");
-  </script>
+[choice]
+1. Открыть дверь => open
+2. Спрятаться => hide
+
+[open]
+Дима: За дверью никого нет.
+История продолжается…
+
+[hide]
+Полина: Кто-то вошёл в комнату…
+`;
+
+const blocks = {};
+let current = "start";
+let choices = [];
+
+function parseStory(text) {
+  let currentKey = "start";
+  blocks[currentKey] = [];
+
+  text.split("\n").forEach(line => {
+    if (line.startsWith("[")) {
+      currentKey = line.replace(/\[|\]/g, "").trim();
+      blocks[currentKey] = [];
+    } else {
+      blocks[currentKey].push(line);
+    }
+  });
+}
+
+function render(key) {
+  const chat = document.getElementById("chat");
+  chat.innerHTML = "";
+  choices = [];
+
+  blocks[key].forEach(line => {
+    if (line.includes("=>")) {
+      const [text, target] = line.split("=>");
+      choices.push(target.trim());
+      chat.innerHTML += text + "\n";
+    } else {
+      chat.innerHTML += line + "\n";
+    }
+  });
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function send() {
+  const input = document.getElementById("userInput");
+  const index = parseInt(input.value) - 1;
+  input.value = "";
+
+  if (choices[index]) {
+    render(choices[index]);
+  }
+}
+
+parseStory(storyText);
+render("start");
+</script>
 
 </body>
 </html>
