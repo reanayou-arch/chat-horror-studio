@@ -1,1 +1,44 @@
+* { box-sizing: border-box; }
 
+body {
+  margin: 0;
+  background: #0b0b0b;
+  color: #eee;
+  font-family: system-ui, Arial, sans-serif;
+}
+
+.app {
+  max-width: 480px;
+  height: 100vh;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 14px;
+  background: #111;
+  font-weight: 600;
+}
+
+.screen {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  border: none;
+  background: #2a2a2a;
+  color: #fff;
+  font-size: 15px;
+}
+
+.hint {
+  font-size: 13px;
+  color: #888;
+}
