@@ -1,156 +1,53 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chat Horror Studio — Игра</title>
-
-<style>
-body {
-  margin: 0;
-  background: radial-gradient(circle at top, #0b1220, #02040a);
-  color: #e6e6eb;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-.app {
-  max-width: 420px;
-  margin: auto;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.header {
-  padding: 16px;
-  font-size: 22px;
-  font-weight: 700;
-  background: linear-gradient(180deg, #121a33, #080c1a);
-  border-bottom: 1px solid #232332;
-}
-
-.chat {
-  flex: 1;
-  padding: 16px;
-  overflow-y: auto;
-  white-space: pre-line;
-}
-
-.input {
-  display: flex;
-  padding: 12px;
-  border-top: 1px solid #232332;
-  background: #050814;
-}
-
-input {
-  flex: 1;
-  background: #0e1325;
-  border: 1px solid #2a2f4a;
-  border-radius: 10px;
-  color: #fff;
-  padding: 10px;
-  font-size: 16px;
-}
-
-button {
-  margin-left: 8px;
-  background: #1f2a52;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 16px;
-}
-</style>
+  <meta charset="UTF-8">
+  <title>Chat Horror Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
+  <div class="app">
 
-<div class="app">
-  <div class="header">Игра</div>
-  <div class="chat" id="chat"></div>
+    <header class="header">
+      Chat Horror Studio
+    </header>
 
-  <div class="input">
-    <input id="userInput" placeholder="Введите номер выбора">
-    <button onclick="send()">OK</button>
+    <main class="screen">
+
+      <button class="btn back" onclick="location.href='index.html'">
+        ← Назад
+      </button>
+
+      <h2 class="story-title">Последнее дыхание</h2>
+      <div class="genre">Хоррор</div>
+
+      <!-- ЧАТ -->
+      <div class="chat">
+
+        <div class="message left">
+          <div class="avatar">В</div>
+          <div class="bubble">
+            <div class="name">Вика</div>
+            <div class="text">Господи, где мы? 😟</div>
+          </div>
+        </div>
+
+        <div class="message left">
+          <div class="avatar">С</div>
+          <div class="bubble">
+            <div class="name">Саша</div>
+            <div class="text">Не знаю… Но мне здесь не нравится.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <button class="btn primary">Далее</button>
+
+    </main>
+
   </div>
-</div>
-
-<script>
-const storyText = `
-Вика: Ты слышишь шаги за дверью…
-
-[choice]
-1. Открыть дверь => open
-2. Спрятаться => hide
-
-[open]
-Дима: За дверью пусто. Но свет в коридоре мигает…
-
-[choice]
-1. Выйти в коридор => hall
-2. Закрыть дверь => close
-
-[hide]
-Полина: Ты затаился. Кто-то медленно идёт по комнате…
-
-[hall]
-Конец демо.
-
-[close]
-Конец демо.
-`;
-
-const blocks = {};
-let current = "start";
-let choices = [];
-
-function parseStory(text) {
-  let key = "start";
-  blocks[key] = [];
-
-  text.split("\n").forEach(line => {
-    if (line.startsWith("[")) {
-      key = line.replace(/\[|\]/g, "").trim();
-      blocks[key] = [];
-    } else {
-      blocks[key].push(line);
-    }
-  });
-}
-
-function render(key) {
-  const chat = document.getElementById("chat");
-  chat.innerHTML = "";
-  choices = [];
-
-  blocks[key].forEach(line => {
-    if (line.includes("=>")) {
-      const [text, target] = line.split("=>");
-      chat.innerHTML += text + "\n";
-      choices.push(target.trim());
-    } else {
-      chat.innerHTML += line + "\n";
-    }
-  });
-
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function send() {
-  const input = document.getElementById("userInput");
-  const index = parseInt(input.value) - 1;
-  input.value = "";
-
-  if (choices[index]) {
-    render(choices[index]);
-  }
-}
-
-parseStory(storyText);
-render("start");
-</script>
-
 </body>
 </html>
