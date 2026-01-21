@@ -65,9 +65,7 @@ input, textarea {
   font-size: 15px;
 }
 
-textarea {
-  min-height: 120px;
-}
+textarea { min-height: 120px; }
 
 /* CARDS */
 .card {
@@ -87,18 +85,27 @@ textarea {
 .message {
   display: flex;
   align-items: flex-end;
-}
-
-.message.left {
-  justify-content: flex-start;
+  gap: 8px;
 }
 
 .message.right {
-  justify-content: flex-end;
+  flex-direction: row-reverse;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
 }
 
 .bubble {
-  max-width: 75%;
+  max-width: 70%;
   padding: 10px 14px;
   border-radius: 16px;
   line-height: 1.3;
@@ -137,15 +144,24 @@ textarea {
 <script>
 let stories = JSON.parse(localStorage.getItem("stories") || "[]");
 
+const colors = ["#ef4444","#22c55e","#3b82f6","#eab308","#a855f7","#ec4899"];
+const avatarColors = {};
+
+function getColor(name) {
+  if(!avatarColors[name]) {
+    avatarColors[name] = colors[Object.keys(avatarColors).length % colors.length];
+  }
+  return avatarColors[name];
+}
+
 function save() {
   localStorage.setItem("stories", JSON.stringify(stories));
 }
 
-/* MAIN SCREEN */
+/* MAIN */
 function showMain() {
-  document.getElementById("footer").innerHTML = "";
-  const s = document.getElementById("screen");
-  s.innerHTML = `
+  footer.innerHTML = "";
+  screen.innerHTML = `
     <button class="primary" onclick="showEditor()">➕ Новая история</button>
     ${stories.map((st,i)=>`
       <div class="card">
@@ -162,8 +178,8 @@ let current = null;
 
 function showEditor() {
   current = { title:"", genre:"Хоррор", text:"" };
-  document.getElementById("footer").innerHTML = "";
-  document.getElementById("screen").innerHTML = `
+  footer.innerHTML = "";
+  screen.innerHTML = `
     <div class="card">
       <b>Название</b>
       <input oninput="current.title=this.value">
@@ -193,36 +209,43 @@ function play(i) {
   const lines = st.text.split("\n");
   let index = 0;
 
-  document.getElementById("screen").innerHTML = `
+  screen.innerHTML = `
     <button onclick="showMain()">← Назад</button>
     <h3>${st.title}</h3>
     <div class="chat" id="chat"></div>
   `;
 
-  document.getElementById("footer").innerHTML = `
+  footer.innerHTML = `
     <button class="primary" onclick="next()">Далее</button>
   `;
 
   window.next = () => {
     if(index >= lines.length) return;
+
     const line = lines[index++];
     const parts = line.split(":");
-    const name = parts[0];
-    const text = parts.slice(1).join(":");
+    const name = parts[0].trim();
+    const text = parts.slice(1).join(":").trim();
 
     const side = index % 2 === 0 ? "right" : "left";
 
-    document.getElementById("chat").innerHTML += `
+    chat.innerHTML += `
       <div class="message ${side}">
+        <div class="avatar" style="background:${getColor(name)}">
+          ${name[0]}
+        </div>
         <div class="bubble">
           <div class="name">${name}</div>
           ${text}
         </div>
       </div>
     `;
-    document.getElementById("screen").scrollTop = 99999;
+    screen.scrollTop = 99999;
   };
 }
+
+const screen = document.getElementById("screen");
+const footer = document.getElementById("footer");
 
 showMain();
 </script>
