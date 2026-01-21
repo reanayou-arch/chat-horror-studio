@@ -30,7 +30,7 @@ body {
 button {
   width: 100%;
   padding: 12px;
-  margin-bottom: 10px;
+  margin: 8px 0;
   border-radius: 10px;
   border: none;
   background: #2a2a2a;
@@ -38,7 +38,35 @@ button {
   font-size: 15px;
 }
 
-.hint {
-  font-size: 13px;
+input, textarea {
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0;
+  border-radius: 8px;
+  border: none;
+  background: #000;
+  color: #fff;
+}
+
+.story {
+  background: #151515;
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.msg {
+  margin-bottom: 12px;
+}
+
+.user {
+  font-size: 12px;
   color: #888;
+}
+
+.bubble {
+  background: #1a1a1a;
+  padding: 8px 10px;
+  border-radius: 8px;
+  display: inline-block;
 }
