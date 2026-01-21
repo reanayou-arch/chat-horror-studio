@@ -115,3 +115,54 @@ body {
   font-size: 15px;
   line-height: 1.4;
 }
+/* ===== ЧАТ ===== */
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 20px 0;
+}
+
+.message {
+  display: flex;
+  align-items: flex-end;
+}
+
+.message.left {
+  justify-content: flex-start;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2b6cb0, #1a365d);
+  color: #fff;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.bubble {
+  background: rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 10px 14px;
+  max-width: 75%;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.name {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+
+.text {
+  font-size: 15px;
+  line-height: 1.4;
+}
