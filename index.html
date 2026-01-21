@@ -1,166 +1,133 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chat Horror Studio</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat Horror Studio</title>
 
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: radial-gradient(circle at top, #0f172a, #020617);
-      color: #e5e7eb;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
-    }
-
-    .app {
-      max-width: 420px;
-      margin: 0 auto;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      background: rgba(0,0,0,0.35);
-    }
-
-    .header {
-      padding: 18px;
-      font-size: 20px;
-      font-weight: 700;
-      background: linear-gradient(180deg, #020617, #020617cc);
-      border-bottom: 1px solid #1f2937;
-    }
-
-    .screen {
-      flex: 1;
-      padding: 18px;
-    }
-
-    .btn {
-      padding: 10px 14px;
-      border-radius: 8px;
-      background: #020617;
-      border: 1px solid #374151;
-      color: #e5e7eb;
-      font-size: 14px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    .btn.active {
-      background: #1f2937;
-      border-color: #60a5fa;
-    }
-
-    .card {
-      margin-top: 16px;
-      padding: 14px;
-      border-radius: 10px;
-      background: linear-gradient(180deg, #020617, #020617cc);
-      border: 1px solid #1f2937;
-    }
-
-    input, textarea {
-      width: 100%;
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #374151;
-      background: #020617;
-      color: #e5e7eb;
-    }
-
-    textarea { min-height: 100px; }
-
-    .genres button {
-      margin: 6px 6px 0 0;
-    }
-
-    .hidden { display: none; }
-  </style>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  background:radial-gradient(circle at top,#0f172a,#020617);
+  color:#e5e7eb;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+}
+.app{
+  max-width:420px;
+  margin:0 auto;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+.header{
+  padding:18px;
+  font-size:20px;
+  font-weight:700;
+  background:#020617;
+  border-bottom:1px solid #1f2937;
+}
+.screen{flex:1;padding:18px}
+.btn{
+  padding:10px 14px;
+  border-radius:8px;
+  background:#020617;
+  border:1px solid #374151;
+  color:#e5e7eb;
+  margin-top:10px;
+}
+.btn.active{border-color:#60a5fa}
+.card{
+  margin-top:16px;
+  padding:14px;
+  border-radius:10px;
+  background:#020617;
+  border:1px solid #1f2937;
+}
+input,textarea{
+  width:100%;
+  margin-top:10px;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #374151;
+  background:#020617;
+  color:#e5e7eb;
+}
+textarea{min-height:100px}
+</style>
 </head>
 
 <body>
 <div class="app">
   <div class="header">Chat Horror Studio</div>
-  <div class="screen" id="screen">
-
-    <button class="btn" onclick="openEditor()">➕ Новая история</button>
-
-    <div id="stories"></div>
-
-  </div>
+  <div class="screen" id="screen"></div>
 </div>
 
 <script>
-let currentStory = {
-  title: "",
-  genre: "",
-  characters: [],
-  text: ""
-};
+let stories = [];
+let current = {title:"",genre:"",characters:[],text:""};
 
-function openEditor() {
-  const screen = document.getElementById("screen");
-  screen.innerHTML = `
+renderHome();
+
+function renderHome(){
+  const s=document.getElementById("screen");
+  s.innerHTML=`
+    <button class="btn" onclick="openEditor()">➕ Новая история</button>
+    ${stories.map(story=>`
+      <div class="card">
+        <strong>${story.title}</strong><br>
+        <small>${story.genre} • ${story.characters.length} персонажа</small><br>
+        <button class="btn">▶ Играть</button>
+      </div>
+    `).join("")}
+  `;
+}
+
+function openEditor(){
+  const s=document.getElementById("screen");
+  s.innerHTML=`
     <h3>Название истории</h3>
-    <input id="titleInput" placeholder="Введите название">
+    <input id="title">
 
     <h3>Жанр</h3>
-    <div class="genres">
-      <button class="btn" onclick="selectGenre(this,'Хоррор')">Хоррор</button>
-      <button class="btn" onclick="selectGenre(this,'Мистика')">Мистика</button>
-      <button class="btn" onclick="selectGenre(this,'Триллер')">Триллер</button>
-      <button class="btn" onclick="selectGenre(this,'Детектив')">Детектив</button>
-    </div>
+    <button class="btn" onclick="setGenre(this,'Хоррор')">Хоррор</button>
+    <button class="btn" onclick="setGenre(this,'Мистика')">Мистика</button>
+    <button class="btn" onclick="setGenre(this,'Триллер')">Триллер</button>
+    <button class="btn" onclick="setGenre(this,'Детектив')">Детектив</button>
 
     <h3>Персонажи</h3>
-    <input id="charInput" placeholder="Имя персонажа">
-    <button class="btn" onclick="addCharacter()">Добавить персонажа</button>
+    <input id="char">
+    <button class="btn" onclick="addChar()">Добавить персонажа</button>
     <div id="charList"></div>
 
     <h3>История</h3>
-    <textarea id="storyText" placeholder="Напишите историю..."></textarea>
+    <textarea id="text"></textarea>
 
-    <button class="btn" onclick="createCard()">Создать карточку</button>
+    <button class="btn" onclick="saveStory()">Создать карточку</button>
   `;
 }
 
-function selectGenre(btn, genre) {
-  document.querySelectorAll(".genres .btn").forEach(b => b.classList.remove("active"));
+function setGenre(btn,g){
+  document.querySelectorAll(".btn").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
-  currentStory.genre = genre;
+  current.genre=g;
 }
 
-function addCharacter() {
-  const input = document.getElementById("charInput");
-  if (!input.value) return;
-  currentStory.characters.push(input.value);
-  input.value = "";
-  renderCharacters();
+function addChar(){
+  const i=document.getElementById("char");
+  if(!i.value)return;
+  current.characters.push(i.value);
+  i.value="";
+  document.getElementById("charList").innerHTML=current.characters.map(c=>"• "+c).join("<br>");
 }
 
-function renderCharacters() {
-  const list = document.getElementById("charList");
-  list.innerHTML = currentStory.characters.map(c => `• ${c}`).join("<br>");
-}
-
-function createCard() {
-  currentStory.title = document.getElementById("titleInput").value;
-  currentStory.text = document.getElementById("storyText").value;
-
-  const stories = document.getElementById("stories");
-  stories.innerHTML += `
-    <div class="card">
-      <strong>${currentStory.title}</strong><br>
-      <small>${currentStory.genre} • ${currentStory.characters.length} персонажа</small><br>
-      <button class="btn">▶ Играть</button>
-    </div>
-  `;
-
-  location.reload();
+function saveStory(){
+  current.title=document.getElementById("title").value;
+  current.text=document.getElementById("text").value;
+  stories.push({...current});
+  current={title:"",genre:"",characters:[],text:""};
+  renderHome();
 }
 </script>
 </body>
