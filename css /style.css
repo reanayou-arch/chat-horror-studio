@@ -4,63 +4,59 @@
 
 body {
   margin: 0;
-  background: #0d0d0f;
-  color: #eaeaea;
+  background: radial-gradient(circle at top, #14141c, #050507);
+  color: #e6e6eb;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Контейнер приложения */
 .app {
   max-width: 420px;
   height: 100vh;
   margin: auto;
   display: flex;
   flex-direction: column;
-  background: #0d0d0f;
+  background: transparent;
 }
 
 /* Верхняя панель */
 .header {
-  padding: 16px;
-  background: linear-gradient(180deg, #16161a, #101014);
-  font-size: 18px;
-  font-weight: 600;
-  border-bottom: 1px solid #1f1f24;
+  padding: 18px;
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(180deg, #1a1a25, #0e0e14);
+  border-bottom: 1px solid #232332;
+  letter-spacing: 0.5px;
 }
 
-/* Основной экран */
+/* Основная область */
 .screen {
   flex: 1;
-  padding: 16px;
+  padding: 18px;
   overflow-y: auto;
 }
 
-/* Кнопки */
+/* Основная кнопка */
 button {
   width: 100%;
   padding: 14px;
-  margin-bottom: 12px;
-  border-radius: 14px;
+  margin-bottom: 14px;
+  border-radius: 16px;
   border: none;
-  background: #1f1f2b;
+  background: linear-gradient(135deg, #6a6aff, #8f8fff);
   color: #fff;
   font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-button.primary {
-  background: linear-gradient(135deg, #5b5bff, #8f8fff);
-  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(100, 100, 255, 0.25);
 }
 
 /* Карточка истории */
 .story {
-  background: #15151d;
+  background: rgba(20, 20, 30, 0.85);
+  border: 1px solid #24243a;
   padding: 14px;
-  border-radius: 16px;
-  margin-bottom: 12px;
-  border: 1px solid #1f1f28;
+  border-radius: 18px;
+  margin-bottom: 14px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
 }
 
 .story-title {
@@ -70,30 +66,15 @@ button.primary {
 
 .story-meta {
   font-size: 12px;
-  color: #9a9aa5;
-  margin-top: 4px;
+  color: #9a9ab0;
+  margin-top: 6px;
 }
 
 /* Пустое состояние */
 .empty {
+  margin-top: 60px;
   text-align: center;
-  margin-top: 40px;
-  color: #8b8b95;
-  font-size: 14px;
-}
-
-/* Поля ввода */
-input, textarea {
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 10px;
-  border-radius: 12px;
-  border: none;
-  background: #1a1a22;
-  color: #fff;
-  font-size: 14px;
-}
-
-textarea {
-  resize: none;
+  font-size: 15px;
+  color: #8c8ca1;
+  opacity: 0.85;
 }
