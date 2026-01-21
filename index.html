@@ -54,7 +54,16 @@ input,textarea{
   background:#020617;
   color:#e5e7eb;
 }
-textarea{min-height:100px}
+textarea{min-height:120px}
+.chat{
+  margin-top:14px;
+  padding:12px;
+  border-radius:10px;
+  background:#020617;
+  border:1px solid #1f2937;
+  line-height:1.5;
+}
+.small{color:#9ca3af;font-size:14px}
 </style>
 </head>
 
@@ -65,8 +74,8 @@ textarea{min-height:100px}
 </div>
 
 <script>
-let stories = [];
-let current = {title:"",genre:"",characters:[],text:""};
+let stories=[];
+let current={title:"",genre:"",characters:[],text:""};
 
 renderHome();
 
@@ -74,11 +83,11 @@ function renderHome(){
   const s=document.getElementById("screen");
   s.innerHTML=`
     <button class="btn" onclick="openEditor()">➕ Новая история</button>
-    ${stories.map(story=>`
+    ${stories.map((story,i)=>`
       <div class="card">
         <strong>${story.title}</strong><br>
-        <small>${story.genre} • ${story.characters.length} персонажа</small><br>
-        <button class="btn">▶ Играть</button>
+        <span class="small">${story.genre} • ${story.characters.length} персонажа</span><br>
+        <button class="btn" onclick="playStory(${i})">▶ Играть</button>
       </div>
     `).join("")}
   `;
@@ -97,12 +106,12 @@ function openEditor(){
     <button class="btn" onclick="setGenre(this,'Детектив')">Детектив</button>
 
     <h3>Персонажи</h3>
-    <input id="char">
+    <input id="char" placeholder="Имя персонажа">
     <button class="btn" onclick="addChar()">Добавить персонажа</button>
     <div id="charList"></div>
 
     <h3>История</h3>
-    <textarea id="text"></textarea>
+    <textarea id="text" placeholder="Напишите историю..."></textarea>
 
     <button class="btn" onclick="saveStory()">Создать карточку</button>
   `;
@@ -119,7 +128,8 @@ function addChar(){
   if(!i.value)return;
   current.characters.push(i.value);
   i.value="";
-  document.getElementById("charList").innerHTML=current.characters.map(c=>"• "+c).join("<br>");
+  document.getElementById("charList").innerHTML=
+    current.characters.map(c=>"• "+c).join("<br>");
 }
 
 function saveStory(){
@@ -128,6 +138,24 @@ function saveStory(){
   stories.push({...current});
   current={title:"",genre:"",characters:[],text:""};
   renderHome();
+}
+
+function playStory(i){
+  const st=stories[i];
+  const s=document.getElementById("screen");
+  s.innerHTML=`
+    <button class="btn" onclick="renderHome()">← Назад</button>
+
+    <h3>${st.title}</h3>
+    <div class="small">${st.genre}</div>
+
+    <h4>Персонажи</h4>
+    <div class="small">${st.characters.join(", ")}</div>
+
+    <div class="chat">
+      ${st.text.replace(/\n/g,"<br>")}
+    </div>
+  `;
 }
 </script>
 </body>
