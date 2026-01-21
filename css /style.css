@@ -1,72 +1,99 @@
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
-  background: #0b0b0b;
-  color: #eee;
-  font-family: system-ui, Arial, sans-serif;
+  background: #0d0d0f;
+  color: #eaeaea;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* Контейнер приложения */
 .app {
-  max-width: 480px;
+  max-width: 420px;
   height: 100vh;
   margin: auto;
   display: flex;
   flex-direction: column;
+  background: #0d0d0f;
 }
 
+/* Верхняя панель */
 .header {
-  padding: 14px;
-  background: #111;
+  padding: 16px;
+  background: linear-gradient(180deg, #16161a, #101014);
+  font-size: 18px;
   font-weight: 600;
+  border-bottom: 1px solid #1f1f24;
 }
 
+/* Основной экран */
 .screen {
   flex: 1;
-  padding: 12px;
+  padding: 16px;
   overflow-y: auto;
 }
 
+/* Кнопки */
 button {
   width: 100%;
-  padding: 12px;
-  margin: 8px 0;
-  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+  border-radius: 14px;
   border: none;
-  background: #2a2a2a;
+  background: #1f1f2b;
   color: #fff;
   font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
 }
 
-input, textarea {
-  width: 100%;
-  padding: 10px;
-  margin: 6px 0;
-  border-radius: 8px;
-  border: none;
-  background: #000;
+button.primary {
+  background: linear-gradient(135deg, #5b5bff, #8f8fff);
   color: #fff;
 }
 
+/* Карточка истории */
 .story {
-  background: #151515;
-  padding: 10px;
-  border-radius: 10px;
-  margin-bottom: 10px;
-}
-
-.msg {
+  background: #15151d;
+  padding: 14px;
+  border-radius: 16px;
   margin-bottom: 12px;
+  border: 1px solid #1f1f28;
 }
 
-.user {
+.story-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.story-meta {
   font-size: 12px;
-  color: #888;
+  color: #9a9aa5;
+  margin-top: 4px;
 }
 
-.bubble {
-  background: #1a1a1a;
-  padding: 8px 10px;
-  border-radius: 8px;
-  display: inline-block;
+/* Пустое состояние */
+.empty {
+  text-align: center;
+  margin-top: 40px;
+  color: #8b8b95;
+  font-size: 14px;
+}
+
+/* Поля ввода */
+input, textarea {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  border: none;
+  background: #1a1a22;
+  color: #fff;
+  font-size: 14px;
+}
+
+textarea {
+  resize: none;
 }
