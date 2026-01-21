@@ -6,9 +6,7 @@
   <title>Chat Horror Studio</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -25,7 +23,6 @@
       display: flex;
       flex-direction: column;
       background: rgba(0,0,0,0.35);
-      backdrop-filter: blur(6px);
     }
 
     .header {
@@ -33,7 +30,7 @@
       font-size: 20px;
       font-weight: 700;
       background: linear-gradient(180deg, #020617, #020617cc);
-      border-bottom: 1px solid #1f2933;
+      border-bottom: 1px solid #1f2937;
     }
 
     .screen {
@@ -42,57 +39,129 @@
     }
 
     .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
       padding: 10px 14px;
-      background: linear-gradient(180deg, #1f2937, #020617);
+      border-radius: 8px;
+      background: #020617;
       border: 1px solid #374151;
       color: #e5e7eb;
       font-size: 14px;
-      border-radius: 8px;
       cursor: pointer;
+      margin-top: 10px;
     }
 
-    .btn:active {
-      transform: scale(0.97);
+    .btn.active {
+      background: #1f2937;
+      border-color: #60a5fa;
     }
 
-    .story {
-      margin-top: 18px;
+    .card {
+      margin-top: 16px;
       padding: 14px;
       border-radius: 10px;
       background: linear-gradient(180deg, #020617, #020617cc);
       border: 1px solid #1f2937;
     }
 
-    .story-title {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 6px;
+    input, textarea {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
     }
 
-    .story-meta {
-      font-size: 13px;
-      color: #9ca3af;
-      margin-bottom: 10px;
+    textarea { min-height: 100px; }
+
+    .genres button {
+      margin: 6px 6px 0 0;
     }
+
+    .hidden { display: none; }
   </style>
 </head>
 
 <body>
-  <div class="app">
-    <div class="header">Chat Horror Studio</div>
+<div class="app">
+  <div class="header">Chat Horror Studio</div>
+  <div class="screen" id="screen">
 
-    <div class="screen">
-      <button class="btn">➕ Новая история</button>
+    <button class="btn" onclick="openEditor()">➕ Новая история</button>
 
-      <div class="story">
-        <div class="story-title">Тест</div>
-        <div class="story-meta">1 сообщение</div>
-        <button class="btn">▶ Играть</button>
-      </div>
-    </div>
+    <div id="stories"></div>
+
   </div>
+</div>
+
+<script>
+let currentStory = {
+  title: "",
+  genre: "",
+  characters: [],
+  text: ""
+};
+
+function openEditor() {
+  const screen = document.getElementById("screen");
+  screen.innerHTML = `
+    <h3>Название истории</h3>
+    <input id="titleInput" placeholder="Введите название">
+
+    <h3>Жанр</h3>
+    <div class="genres">
+      <button class="btn" onclick="selectGenre(this,'Хоррор')">Хоррор</button>
+      <button class="btn" onclick="selectGenre(this,'Мистика')">Мистика</button>
+      <button class="btn" onclick="selectGenre(this,'Триллер')">Триллер</button>
+      <button class="btn" onclick="selectGenre(this,'Детектив')">Детектив</button>
+    </div>
+
+    <h3>Персонажи</h3>
+    <input id="charInput" placeholder="Имя персонажа">
+    <button class="btn" onclick="addCharacter()">Добавить персонажа</button>
+    <div id="charList"></div>
+
+    <h3>История</h3>
+    <textarea id="storyText" placeholder="Напишите историю..."></textarea>
+
+    <button class="btn" onclick="createCard()">Создать карточку</button>
+  `;
+}
+
+function selectGenre(btn, genre) {
+  document.querySelectorAll(".genres .btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentStory.genre = genre;
+}
+
+function addCharacter() {
+  const input = document.getElementById("charInput");
+  if (!input.value) return;
+  currentStory.characters.push(input.value);
+  input.value = "";
+  renderCharacters();
+}
+
+function renderCharacters() {
+  const list = document.getElementById("charList");
+  list.innerHTML = currentStory.characters.map(c => `• ${c}`).join("<br>");
+}
+
+function createCard() {
+  currentStory.title = document.getElementById("titleInput").value;
+  currentStory.text = document.getElementById("storyText").value;
+
+  const stories = document.getElementById("stories");
+  stories.innerHTML += `
+    <div class="card">
+      <strong>${currentStory.title}</strong><br>
+      <small>${currentStory.genre} • ${currentStory.characters.length} персонажа</small><br>
+      <button class="btn">▶ Играть</button>
+    </div>
+  `;
+
+  location.reload();
+}
+</script>
 </body>
 </html>
