@@ -9,154 +9,177 @@
 *{box-sizing:border-box}
 body{
   margin:0;
-  min-height:100vh;
-  background:radial-gradient(circle at top,#0f172a,#020617);
+  font-family:system-ui;
+  background:radial-gradient(circle at top,#111827,#020617);
   color:#e5e7eb;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto;
 }
 .app{
   max-width:420px;
-  margin:0 auto;
   min-height:100vh;
+  margin:auto;
   display:flex;
   flex-direction:column;
 }
-.header{
-  padding:18px;
-  font-size:20px;
+header{
+  padding:20px;
+  font-size:22px;
   font-weight:700;
-  background:#020617;
-  border-bottom:1px solid #1f2937;
+  background:linear-gradient(180deg,#020617,#020617cc);
+  border-bottom:1px solid #1f2933;
 }
-.screen{flex:1;padding:18px}
+main{
+  flex:1;
+  padding:20px;
+}
 .btn{
-  padding:10px 14px;
-  border-radius:8px;
   background:#020617;
-  border:1px solid #374151;
+  border:1px solid #334155;
   color:#e5e7eb;
-  margin-top:10px;
-}
-.btn.active{border-color:#60a5fa}
-.card{
-  margin-top:16px;
-  padding:14px;
+  padding:12px 16px;
   border-radius:10px;
-  background:#020617;
-  border:1px solid #1f2937;
+  margin:6px 0;
+  cursor:pointer;
+  width:100%;
+}
+.btn:hover{border-color:#60a5fa}
+.card{
+  border:1px solid #1f2933;
+  border-radius:14px;
+  padding:16px;
+  margin-top:12px;
+  background:linear-gradient(160deg,#020617,#020617aa);
 }
 input,textarea{
   width:100%;
-  margin-top:10px;
-  padding:10px;
-  border-radius:8px;
-  border:1px solid #374151;
+  padding:12px;
+  margin:6px 0;
+  border-radius:10px;
   background:#020617;
+  border:1px solid #334155;
   color:#e5e7eb;
 }
 textarea{min-height:120px}
+.small{opacity:.7;font-size:14px}
 .chat{
-  margin-top:14px;
-  padding:12px;
-  border-radius:10px;
-  background:#020617;
-  border:1px solid #1f2937;
-  line-height:1.5;
+  margin-top:16px;
+  line-height:1.4;
 }
-.small{color:#9ca3af;font-size:14px}
+.genre button{
+  width:auto;
+  margin-right:6px;
+}
 </style>
 </head>
 
 <body>
 <div class="app">
-  <div class="header">Chat Horror Studio</div>
-  <div class="screen" id="screen"></div>
+<header>Chat Horror Studio</header>
+<main id="screen"></main>
 </div>
 
 <script>
-let stories=[];
-let current={title:"",genre:"",characters:[],text:""};
+let stories = JSON.parse(localStorage.getItem("stories") || "[]");
 
-renderHome();
+function save(){
+  localStorage.setItem("stories", JSON.stringify(stories));
+}
 
 function renderHome(){
-  const s=document.getElementById("screen");
-  s.innerHTML=`
-    <button class="btn" onclick="openEditor()">➕ Новая история</button>
-    ${stories.map((story,i)=>`
+  const s = document.getElementById("screen");
+  s.innerHTML = `
+    <button class="btn" onclick="newStory()">➕ Новая история</button>
+    ${stories.length === 0 ? "<p class='small'>Историй пока нет</p>" : ""}
+    ${stories.map((st,i)=>`
       <div class="card">
-        <strong>${story.title}</strong><br>
-        <span class="small">${story.genre} • ${story.characters.length} персонажа</span><br>
+        <b>${st.title}</b>
+        <div class="small">${st.genre} • ${st.characters.length} персонажа</div>
         <button class="btn" onclick="playStory(${i})">▶ Играть</button>
       </div>
     `).join("")}
   `;
 }
 
-function openEditor(){
-  const s=document.getElementById("screen");
-  s.innerHTML=`
+function newStory(){
+  document.getElementById("screen").innerHTML = `
     <h3>Название истории</h3>
     <input id="title">
 
     <h3>Жанр</h3>
-    <button class="btn" onclick="setGenre(this,'Хоррор')">Хоррор</button>
-    <button class="btn" onclick="setGenre(this,'Мистика')">Мистика</button>
-    <button class="btn" onclick="setGenre(this,'Триллер')">Триллер</button>
-    <button class="btn" onclick="setGenre(this,'Детектив')">Детектив</button>
+    <div class="genre">
+      <button class="btn" onclick="setGenre('Хоррор')">Хоррор</button>
+      <button class="btn" onclick="setGenre('Мистика')">Мистика</button>
+      <button class="btn" onclick="setGenre('Триллер')">Триллер</button>
+      <button class="btn" onclick="setGenre('Детектив')">Детектив</button>
+    </div>
+    <div id="genreLabel" class="small"></div>
 
     <h3>Персонажи</h3>
-    <input id="char" placeholder="Имя персонажа">
+    <input id="charName" placeholder="Имя персонажа">
     <button class="btn" onclick="addChar()">Добавить персонажа</button>
-    <div id="charList"></div>
+    <ul id="charList"></ul>
 
     <h3>История</h3>
-    <textarea id="text" placeholder="Напишите историю..."></textarea>
+    <textarea id="text" placeholder="Каждая реплика с новой строки"></textarea>
 
-    <button class="btn" onclick="saveStory()">Создать карточку</button>
+    <button class="btn" onclick="createStory()">Создать карточку</button>
+    <button class="btn" onclick="renderHome()">← Назад</button>
   `;
+  window.genre = "";
+  window.chars = [];
 }
 
-function setGenre(btn,g){
-  document.querySelectorAll(".btn").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  current.genre=g;
+function setGenre(g){
+  genre = g;
+  document.getElementById("genreLabel").innerText = "Выбран жанр: " + g;
 }
 
 function addChar(){
-  const i=document.getElementById("char");
-  if(!i.value)return;
-  current.characters.push(i.value);
-  i.value="";
-  document.getElementById("charList").innerHTML=
-    current.characters.map(c=>"• "+c).join("<br>");
+  const input = document.getElementById("charName");
+  if(!input.value) return;
+  chars.push(input.value);
+  document.getElementById("charList").innerHTML = chars.map(c=>`<li>${c}</li>`).join("");
+  input.value="";
 }
 
-function saveStory(){
-  current.title=document.getElementById("title").value;
-  current.text=document.getElementById("text").value;
-  stories.push({...current});
-  current={title:"",genre:"",characters:[],text:""};
+function createStory(){
+  const title = document.getElementById("title").value;
+  const text = document.getElementById("text").value;
+  if(!title || !genre || !text) return alert("Заполни всё");
+
+  stories.push({
+    title,
+    genre,
+    characters: chars,
+    text
+  });
+  save();
   renderHome();
 }
 
 function playStory(i){
-  const st=stories[i];
-  const s=document.getElementById("screen");
-  s.innerHTML=`
-    <button class="btn" onclick="renderHome()">← Назад</button>
+  const st = stories[i];
+  const s = document.getElementById("screen");
+  const lines = st.text.split("\n").filter(l=>l.trim());
+  let idx = 0;
 
+  s.innerHTML = `
+    <button class="btn" onclick="renderHome()">← Назад</button>
     <h3>${st.title}</h3>
     <div class="small">${st.genre}</div>
-
-    <h4>Персонажи</h4>
-    <div class="small">${st.characters.join(", ")}</div>
-
-    <div class="chat">
-      ${st.text.replace(/\n/g,"<br>")}
-    </div>
+    <div id="chat" class="chat"></div>
+    <button id="next" class="btn">Далее</button>
   `;
+
+  const chat = document.getElementById("chat");
+  document.getElementById("next").onclick = ()=>{
+    if(idx < lines.length){
+      chat.innerHTML += lines[idx] + "<br><br>";
+      idx++;
+    }
+  };
 }
+
+renderHome();
 </script>
 </body>
 </html>
