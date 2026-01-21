@@ -7,90 +7,20 @@
 
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:system-ui;
-  background:#0b1220;
-  color:#e5e7eb;
-}
-.app{
-  max-width:420px;
-  margin:auto;
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-}
-.header{
-  padding:16px;
-  font-size:20px;
-  font-weight:700;
-  background:#020617;
-  border-bottom:1px solid rgba(255,255,255,.1);
-}
-.chat{
-  flex:1;
-  padding:16px;
-  overflow-y:auto;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-.message{
-  display:flex;
-  gap:8px;
-}
-.player{
-  align-self:flex-end;
-}
-.avatar{
-  width:36px;
-  height:36px;
-  border-radius:50%;
-  background:#2563eb;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:700;
-}
-.bubble{
-  background:#111827;
-  border-radius:16px;
-  padding:10px 14px;
-  max-width:75%;
-}
-.player .bubble{
-  background:#2563eb;
-}
-.name{
-  font-size:12px;
-  opacity:.7;
-  margin-bottom:4px;
-}
-.input{
-  display:flex;
-  gap:8px;
-  padding:12px;
-  border-top:1px solid rgba(255,255,255,.1);
-}
-input{
-  flex:1;
-  background:#020617;
-  border:1px solid rgba(255,255,255,.15);
-  border-radius:14px;
-  padding:10px;
-  color:#fff;
-}
-button{
-  background:#2563eb;
-  border:none;
-  border-radius:14px;
-  padding:10px 14px;
-  color:#fff;
-}
-.typing{
-  opacity:.5;
-  font-size:13px;
-}
+body{margin:0;font-family:system-ui;background:#0b1220;color:#e5e7eb}
+.app{max-width:420px;margin:auto;height:100vh;display:flex;flex-direction:column}
+.header{padding:16px;font-size:20px;font-weight:700;background:#020617;border-bottom:1px solid rgba(255,255,255,.1)}
+.chat{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.message{display:flex;gap:8px}
+.player{align-self:flex-end}
+.avatar{width:36px;height:36px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:700}
+.bubble{background:#111827;border-radius:16px;padding:10px 14px;max-width:75%}
+.player .bubble{background:#2563eb}
+.name{font-size:12px;opacity:.7;margin-bottom:4px}
+.input{display:flex;gap:8px;padding:12px;border-top:1px solid rgba(255,255,255,.1)}
+input{flex:1;background:#020617;border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:10px;color:#fff}
+button{background:#2563eb;border:none;border-radius:14px;padding:10px 14px;color:#fff}
+.typing{opacity:.5;font-size:13px}
 </style>
 </head>
 
@@ -98,7 +28,6 @@ button{
 <div class="app">
   <div class="header">Чат</div>
   <div class="chat" id="chat"></div>
-
   <div class="input">
     <input id="input" placeholder="Написать сообщение…">
     <button onclick="send()">▶</button>
@@ -106,33 +35,37 @@ button{
 </div>
 
 <script>
+/* ================== НАСТРОЙКИ ================== */
+const AI_ON = false; // ← ПОТОМ ПЕРЕКЛЮЧИШЬ НА true
+/* =============================================== */
+
 const chat = document.getElementById("chat");
 const input = document.getElementById("input");
 
 const characters = [
   {
     name:"Вика",
-    avatar:"В",
-    auto:[
-      "Почему он молчит?..",
-      "Мне здесь не нравится…",
-      "Вы тоже это слышали?"
-    ]
+    role:"тревожная, боится неизвестности, часто сомневается",
+    trust:50,
+    localReplies:{
+      fear:["Мне страшно…","Я не выдерживаю это напряжение…"],
+      calm:["Хорошо… я стараюсь держаться."]
+    }
   },
   {
     name:"Саша",
-    avatar:"С",
-    auto:[
-      "Связь нестабильна.",
-      "Нужно сохранять спокойствие.",
-      "Это место странное."
-    ]
+    role:"холодный, логичный, скрывает эмоции",
+    trust:30,
+    localReplies:{
+      fear:["Паника не поможет.","Соберись."],
+      calm:["Так лучше.","Продолжай."]
+    }
   }
 ];
 
 let lastPlayerAction = Date.now();
 
-/* === UI === */
+/* ================== UI ================== */
 function addMessage(name,text,isPlayer=false){
   chat.innerHTML += `
     <div class="message ${isPlayer?"player":""}">
@@ -141,54 +74,65 @@ function addMessage(name,text,isPlayer=false){
         <div class="name">${name}</div>
         ${text}
       </div>
-    </div>
-  `;
+    </div>`;
   chat.scrollTop = 99999;
 }
 
-/* === PLAYER === */
+/* ================== PLAYER ================== */
 function send(){
   const text = input.value.trim();
   if(!text) return;
   input.value = "";
   lastPlayerAction = Date.now();
   addMessage("Вы",text,true);
+  respond(text);
 }
 
-/* === AUTONOMOUS MESSAGES === */
-function autoMessage(){
-  const now = Date.now();
-
-  // если игрок молчит больше 15 секунд
-  if(now - lastPlayerAction < 15000) return;
-
+/* ================== МОЗГ ================== */
+async function respond(text){
   const char = characters[Math.floor(Math.random()*characters.length)];
-  const msg = char.auto[Math.floor(Math.random()*char.auto.length)];
-
-  showTyping(char.name, () => {
-    addMessage(char.name, msg);
-    lastPlayerAction = Date.now(); // сбрасываем, чтобы не спамили
+  showTyping(char.name, async ()=>{
+    if(AI_ON){
+      const aiText = await aiReply(char, text);
+      addMessage(char.name, aiText);
+    } else {
+      const localText = localReply(char, text);
+      addMessage(char.name, localText);
+    }
   });
 }
 
-/* === TYPING EFFECT === */
-function showTyping(name, callback){
-  const typing = document.createElement("div");
-  typing.className = "typing";
-  typing.innerText = `${name} печатает…`;
-  chat.appendChild(typing);
-  chat.scrollTop = 99999;
-
-  setTimeout(()=>{
-    typing.remove();
-    callback();
-  }, 2000 + Math.random()*3000);
+/* ===== ЛОКАЛЬНЫЙ МОЗГ (ФОЛБЭК) ===== */
+function localReply(char, text){
+  const t = text.toLowerCase();
+  let mood = t.includes("страш") ? "fear" : "calm";
+  char.trust += (mood==="calm"?3:-5);
+  char.trust = Math.max(0,Math.min(100,char.trust));
+  if(char.trust < 30) return "Я не уверен, что тебе можно доверять.";
+  if(char.trust > 70) return "Я с тобой. Что дальше?";
+  const arr = char.localReplies[mood];
+  return arr[Math.floor(Math.random()*arr.length)];
 }
 
-/* === START === */
-addMessage("Вика","Ты здесь?..");
+/* ===== РЕАЛЬНЫЙ ИИ (ПОКА ЗАГЛУШКА) ===== */
+async function aiReply(char, playerText){
+  // ЗДЕСЬ ПОТОМ БУДЕТ ЗАПРОС К ИИ ЧЕРЕЗ СЕРВЕР
+  // Контекст: роль персонажа + последние сообщения + правила мира
+  return "…"; // заглушка
+}
 
-setInterval(autoMessage, 5000);
+/* ================== TYPING ================== */
+function showTyping(name, cb){
+  const t = document.createElement("div");
+  t.className="typing";
+  t.innerText=`${name} печатает…`;
+  chat.appendChild(t);
+  chat.scrollTop=99999;
+  setTimeout(()=>{t.remove();cb();},2000+Math.random()*3000);
+}
+
+/* ================== AUTOSTART ================== */
+addMessage("Вика","Ты правда здесь?..");
 </script>
 </body>
 </html>
