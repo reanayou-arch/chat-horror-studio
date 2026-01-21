@@ -1,79 +1,45 @@
-* {
-  box-sizing: border-box;
+const screen = document.getElementById("screen");
+
+let stories = JSON.parse(localStorage.getItem("stories") || "[]");
+
+function save() {
+  localStorage.setItem("stories", JSON.stringify(stories));
 }
 
-/* УБИРАЕТ БЕЛЫЙ ФОН НА ANDROID */
-html, body {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  background: #0b0b12;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  color: #eaeaf0;
+function renderHome() {
+  screen.innerHTML = `
+    <button onclick="createStory()">➕ Новая история</button>
+
+    ${
+      stories.length === 0
+        ? `<div class="empty">Историй пока нет</div>`
+        : stories.map((s, i) => `
+            <div class="story">
+              <div class="story-title">${s.title}</div>
+              <div class="story-meta">${s.lines.length} сообщений</div>
+              <button onclick="play(${i})">▶ Играть</button>
+            </div>
+          `).join("")
+    }
+  `;
 }
 
-/* ПРИЛОЖЕНИЕ НА ВЕСЬ ЭКРАН */
-.app {
-  width: 100%;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: linear-gradient(180deg, #0b0b12, #050507);
-}
+window.createStory = function () {
+  const title = prompt("Название истории");
+  if (!title) return;
 
-/* ВЕРХНЯЯ ПАНЕЛЬ */
-.header {
-  padding: 18px;
-  font-size: 20px;
-  font-weight: 700;
-  background: linear-gradient(180deg, #1b1b28, #111118);
-  border-bottom: 1px solid #26263a;
-}
+  stories.push({
+    title,
+    lines: [{ text: "Начало истории" }]
+  });
 
-/* ОСНОВНАЯ ОБЛАСТЬ */
-.screen {
-  flex: 1;
-  padding: 18px;
-  overflow-y: auto;
-}
+  save();
+  renderHome();
+};
 
-/* КНОПКИ */
-button {
-  width: 100%;
-  padding: 14px;
-  margin-bottom: 14px;
-  border-radius: 16px;
-  border: none;
-  background: linear-gradient(135deg, #6b6bff, #8f8fff);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-}
+window.play = function (index) {
+  localStorage.setItem("playIndex", index);
+  location.href = "play.html";
+};
 
-/* КАРТОЧКА ИСТОРИИ */
-.story {
-  background: #141421;
-  border: 1px solid #26263a;
-  border-radius: 18px;
-  padding: 14px;
-  margin-bottom: 14px;
-}
-
-.story-title {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.story-meta {
-  font-size: 12px;
-  color: #9a9ab0;
-  margin: 6px 0 10px;
-}
-
-/* ПУСТО */
-.empty {
-  margin-top: 60px;
-  text-align: center;
-  font-size: 15px;
-  color: #8b8ba0;
-}
+renderHome();
