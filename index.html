@@ -6,21 +6,110 @@
 <title>Chat Horror Studio</title>
 
 <style>
-body{margin:0;font-family:system-ui;background:#0b1220;color:#fff}
-.app{max-width:420px;margin:auto;height:100vh;display:flex;flex-direction:column}
-.header{padding:16px;font-size:20px;font-weight:700;background:#020617}
-.screen{flex:1;padding:16px;overflow-y:auto}
-.card{background:#111827;padding:14px;border-radius:14px;margin-bottom:12px}
-input{width:100%;padding:10px;border-radius:12px;border:none;margin-top:6px}
-button{margin-top:10px;width:100%;padding:12px;border:none;border-radius:14px;background:#2563eb;color:white;font-size:15px}
-.chat{display:flex;flex-direction:column;gap:12px}
-.message{display:flex;gap:8px}
-.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700}
-.bubble{background:#1f2937;padding:10px 14px;border-radius:16px;max-width:75%}
-.name{font-size:12px;opacity:.7;margin-bottom:4px}
-.player{justify-content:flex-end}
-.player .bubble{background:#22c55e}
-.typing{opacity:.5;font-size:13px}
+body{
+  margin:0;
+  font-family:system-ui;
+  color:#fff;
+  transition:0.6s;
+}
+
+.app{
+  max-width:420px;
+  margin:auto;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+.header{
+  padding:16px;
+  font-size:20px;
+  font-weight:700;
+  background:rgba(0,0,0,0.6);
+}
+
+.screen{
+  flex:1;
+  padding:16px;
+  overflow-y:auto;
+}
+
+.card{
+  background:rgba(0,0,0,0.55);
+  padding:14px;
+  border-radius:14px;
+  margin-bottom:12px;
+}
+
+input{
+  width:100%;
+  padding:10px;
+  border-radius:12px;
+  border:none;
+  margin-top:6px;
+}
+
+button{
+  margin-top:10px;
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:14px;
+  background:#2563eb;
+  color:white;
+  font-size:15px;
+}
+
+.chat{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.message{
+  display:flex;
+  gap:8px;
+}
+
+.avatar{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+}
+
+.bubble{
+  background:rgba(30,30,40,0.7);
+  padding:10px 14px;
+  border-radius:16px;
+  max-width:75%;
+}
+
+.name{
+  font-size:12px;
+  opacity:.7;
+  margin-bottom:4px;
+}
+
+.player{
+  justify-content:flex-end;
+}
+
+.player .bubble{
+  background:rgba(34,197,94,0.85);
+}
+
+.system .bubble{
+  background:rgba(120,120,120,0.4);
+}
+
+.typing{
+  opacity:.5;
+  font-size:13px;
+}
 </style>
 </head>
 
@@ -31,26 +120,62 @@ button{margin-top:10px;width:100%;padding:12px;border:none;border-radius:14px;ba
 </div>
 
 <script>
-let персонажи = [];
-let режим = "editor";
+let персонажи=[];
+let режим="editor";
+let autoTimer=null;
+let eventTimer=null;
+let currentScene="school";
 
-/* === РЕНДЕР ПАНЕЛИ АВТОРА === */
+/* === СЦЕНЫ === */
+const scenes={
+  school:{
+    name:"🏫 Школа",
+    bg:"linear-gradient(#1e3a8a,#0b1220)",
+    events:[
+      "📢 В коридоре кто-то смеётся...",
+      "📓 Алина: Опять эта школа раздражает.",
+      "👀 Макс: Ты заметил, что за нами смотрят?"
+    ]
+  },
+  camp:{
+    name:"🌲 Лагерь ночью",
+    bg:"linear-gradient(#052e16,#000)",
+    events:[
+      "🔥 Костёр почти погас...",
+      "🌙 Саша: Здесь слишком тихо.",
+      "😨 Кто-то ходит между палатками..."
+    ]
+  },
+  forest:{
+    name:"🌫 Лес",
+    bg:"linear-gradient(#064e3b,#020617)",
+    events:[
+      "🍂 Ветки хрустят сами по себе...",
+      "👁 Кажется, кто-то рядом.",
+      "🕳 Тропа исчезает во тьме."
+    ]
+  }
+};
+
+/* === ПАНЕЛЬ === */
 function showEditor(){
   режим="editor";
+  clearInterval(autoTimer);
+  clearInterval(eventTimer);
+
   screen.innerHTML=`
     <div class="card">
-      <h3>📖 Создание истории</h3>
-      <input id="storyTitle" placeholder="Название истории">
+      <h3>🎬 Выбери сцену</h3>
+      <button onclick="setScene('school')">🏫 Школа</button>
+      <button onclick="setScene('camp')">🌲 Лагерь</button>
+      <button onclick="setScene('forest')">🌫 Лес</button>
     </div>
 
     <div class="card">
       <h3>👥 Персонажи</h3>
-
       <input id="charName" placeholder="Имя персонажа">
       <input id="charRole" placeholder="Характер (стерва, мачо...)">
-
-      <button onclick="addChar()">Добавить персонажа</button>
-
+      <button onclick="addChar()">Добавить</button>
       <div id="charList"></div>
     </div>
 
@@ -59,17 +184,20 @@ function showEditor(){
   renderCharList();
 }
 
-/* === ДОБАВИТЬ ПЕРСОНАЖА === */
+/* === СЦЕНА === */
+function setScene(id){
+  currentScene=id;
+  document.body.style.background=scenes[id].bg;
+}
+
+/* === ДОБАВИТЬ === */
 function addChar(){
   const name=document.getElementById("charName").value.trim();
   const role=document.getElementById("charRole").value.trim();
-  if(!name||!role) return alert("Заполни имя и характер");
+  if(!name||!role) return alert("Заполни");
 
   персонажи.push({
-    name,
-    role,
-    color: randomColor(),
-    memory:[]
+    name,role,color:randomColor()
   });
 
   document.getElementById("charName").value="";
@@ -77,40 +205,40 @@ function addChar(){
   renderCharList();
 }
 
-/* === СПИСОК ПЕРСОНАЖЕЙ === */
 function renderCharList(){
   const list=document.getElementById("charList");
   if(!list) return;
   list.innerHTML=персонажи.map(p=>`
     <div style="margin-top:8px">
-      <b>${p.name}</b> — <small>${p.role}</small>
+      <b>${p.name}</b> — ${p.role}
     </div>
   `).join("");
 }
 
-/* === ЗАПУСК ИГРЫ === */
+/* === ЗАПУСК === */
 function startGame(){
-  if(персонажи.length<1) return alert("Добавь хотя бы одного персонажа");
+  if(персонажи.length<2) return alert("Нужно 2 персонажа");
 
   режим="game";
   screen.innerHTML=`
     <button onclick="showEditor()">← Назад</button>
+    <div class="card">Сцена: ${scenes[currentScene].name}</div>
     <div class="chat" id="chat"></div>
 
     <div style="display:flex;gap:6px;margin-top:12px">
-      <input id="msg" placeholder="Напиши сообщение..." style="flex:1">
+      <input id="msg" placeholder="Сообщение..." style="flex:1">
       <button onclick="send()" style="width:auto">▶</button>
     </div>
   `;
 
-  addMessage("Система","История началась...", "#444");
+  addSystem("История началась...");
 
-  autoStart();
+  autoTimer=setInterval(autoTalk,7000);
+  eventTimer=setInterval(runEvent,10000);
 }
 
 /* === СООБЩЕНИЯ === */
 function addMessage(name,text,color,isPlayer=false){
-  const chat=document.getElementById("chat");
   chat.innerHTML+=`
     <div class="message ${isPlayer?"player":""}">
       ${isPlayer?"":`<div class="avatar" style="background:${color}">${name[0]}</div>`}
@@ -123,69 +251,50 @@ function addMessage(name,text,color,isPlayer=false){
   chat.scrollTop=99999;
 }
 
+function addSystem(text){
+  chat.innerHTML+=`
+    <div class="message system">
+      <div class="bubble">${text}</div>
+    </div>
+  `;
+}
+
 /* === ИГРОК === */
 function send(){
-  const input=document.getElementById("msg");
-  const text=input.value.trim();
-  if(!text) return;
-  input.value="";
-  addMessage("Вы",text,"",true);
-
-  react(text);
+  const t=document.getElementById("msg").value.trim();
+  if(!t) return;
+  document.getElementById("msg").value="";
+  addMessage("Вы",t,"",true);
 }
 
-/* === РЕАКЦИЯ ПЕРСОНАЖЕЙ === */
-function react(text){
-  const p=персонажи[Math.floor(Math.random()*персонажи.length)];
+/* === АВТОДИАЛОГ === */
+function autoTalk(){
+  const a=персонажи[Math.floor(Math.random()*персонажи.length)];
+  const b=персонажи[Math.floor(Math.random()*персонажи.length)];
 
-  typing(p.name,()=>{
-    let reply="...";
-
-    if(p.role.includes("стерва")){
-      reply="Ой, ну конечно. Как оригинально 🙄";
-    }
-    else if(p.role.includes("мачо")){
-      reply="Интересно... я хочу узнать тебя ближе 😏";
-    }
-    else{
-      reply="Я слушаю тебя...";
-    }
-
-    addMessage(p.name,reply,p.color);
-  });
+  addMessage(a.name,`${b.name}, ты чувствуешь это?..`,a.color);
 }
 
-/* === ПЕЧАТАЕТ === */
-function typing(name,cb){
-  const chat=document.getElementById("chat");
-  const t=document.createElement("div");
-  t.className="typing";
-  t.innerText=name+" печатает...";
-  chat.appendChild(t);
-
-  setTimeout(()=>{
-    t.remove();
-    cb();
-  },1200+Math.random()*1500);
-}
-
-/* === АВТОСТАРТ === */
-function autoStart(){
-  setTimeout(()=>{
-    const p=персонажи[0];
-    addMessage(p.name,"Ну привет... что ты здесь делаешь?",p.color);
-  },2000);
+/* === СОБЫТИЕ ПО СЦЕНЕ === */
+function runEvent(){
+  const ev=scenes[currentScene].events;
+  addSystem(ev[Math.floor(Math.random()*ev.length)]);
 }
 
 /* === ЦВЕТ === */
 function randomColor(){
-  const colors=["#e11d48","#2563eb","#22c55e","#a855f7","#eab308"];
-  return colors[Math.floor(Math.random()*colors.length)];
+  const c=["#e11d48","#2563eb","#22c55e","#a855f7","#eab308"];
+  return c[Math.floor(Math.random()*c.length)];
 }
 
 const screen=document.getElementById("screen");
-showEditor();
-</script>
+let chat=null;
 
+document.body.style.background=scenes.school.bg;
+
+showEditor();
+
+setTimeout(()=>{chat=document.getElementById("chat")},100);
+</script>
 </body>
 </html>
