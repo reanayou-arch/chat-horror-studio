@@ -3,241 +3,197 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chat Horror Studio</title>
+<title>Chat Story Studio</title>
 
 <style>
-body{
-  margin:0;
-  font-family:system-ui;
-  color:#fff;
-  transition:0.6s;
-}
+body{margin:0;font-family:system-ui;background:#0b1220;color:#fff}
+.app{max-width:420px;margin:auto;height:100vh;display:flex;flex-direction:column}
+.header{padding:16px;font-size:20px;font-weight:700;background:#020617}
+.screen{flex:1;padding:16px;overflow-y:auto}
 
-.app{
-  max-width:420px;
-  margin:auto;
-  height:100vh;
-  display:flex;
-  flex-direction:column;
+.card{background:#111827;padding:14px;border-radius:14px;margin-bottom:12px}
+input,select,textarea{
+  width:100%;padding:10px;border-radius:12px;border:none;margin-top:6px;
+  background:#1f2937;color:white
 }
-
-.header{
-  padding:16px;
-  font-size:20px;
-  font-weight:700;
-  background:rgba(0,0,0,0.6);
-}
-
-.screen{
-  flex:1;
-  padding:16px;
-  overflow-y:auto;
-}
-
-.card{
-  background:rgba(0,0,0,0.55);
-  padding:14px;
-  border-radius:14px;
-  margin-bottom:12px;
-}
-
-input{
-  width:100%;
-  padding:10px;
-  border-radius:12px;
-  border:none;
-  margin-top:6px;
-}
-
 button{
-  margin-top:10px;
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:14px;
-  background:#2563eb;
-  color:white;
-  font-size:15px;
+  margin-top:10px;width:100%;padding:12px;border:none;border-radius:14px;
+  background:#2563eb;color:white;font-size:15px
 }
 
-.chat{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-
-.message{
-  display:flex;
-  gap:8px;
-}
-
+.chat{display:flex;flex-direction:column;gap:12px}
+.message{display:flex;gap:8px}
 .avatar{
-  width:36px;
-  height:36px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:700;
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-weight:700
 }
-
-.bubble{
-  background:rgba(30,30,40,0.7);
-  padding:10px 14px;
-  border-radius:16px;
-  max-width:75%;
-}
-
-.name{
-  font-size:12px;
-  opacity:.7;
-  margin-bottom:4px;
-}
-
-.player{
-  justify-content:flex-end;
-}
-
-.player .bubble{
-  background:rgba(34,197,94,0.85);
-}
-
-.system .bubble{
-  background:rgba(120,120,120,0.4);
-}
-
-.typing{
-  opacity:.5;
-  font-size:13px;
-}
+.bubble{background:#1f2937;padding:10px 14px;border-radius:16px;max-width:75%}
+.name{font-size:12px;opacity:.7;margin-bottom:4px}
+.player{justify-content:flex-end}
+.player .bubble{background:#22c55e}
+.system{justify-content:center}
+.system .bubble{background:#444}
+.inputRow{display:flex;gap:6px;margin-top:10px}
+.inputRow input{flex:1}
+.inputRow button{width:auto}
 </style>
 </head>
 
 <body>
 <div class="app">
-  <div class="header">Chat Horror Studio</div>
+  <div class="header">Chat Story Studio</div>
   <div class="screen" id="screen"></div>
 </div>
 
 <script>
-let персонажи=[];
-let режим="editor";
-let autoTimer=null;
-let eventTimer=null;
-let currentScene="school";
+let characters=[];
+let story=[];
 
-/* === СЦЕНЫ === */
-const scenes={
-  school:{
-    name:"🏫 Школа",
-    bg:"linear-gradient(#1e3a8a,#0b1220)",
-    events:[
-      "📢 В коридоре кто-то смеётся...",
-      "📓 Алина: Опять эта школа раздражает.",
-      "👀 Макс: Ты заметил, что за нами смотрят?"
-    ]
-  },
-  camp:{
-    name:"🌲 Лагерь ночью",
-    bg:"linear-gradient(#052e16,#000)",
-    events:[
-      "🔥 Костёр почти погас...",
-      "🌙 Саша: Здесь слишком тихо.",
-      "😨 Кто-то ходит между палатками..."
-    ]
-  },
-  forest:{
-    name:"🌫 Лес",
-    bg:"linear-gradient(#064e3b,#020617)",
-    events:[
-      "🍂 Ветки хрустят сами по себе...",
-      "👁 Кажется, кто-то рядом.",
-      "🕳 Тропа исчезает во тьме."
-    ]
-  }
-};
-
-/* === ПАНЕЛЬ === */
+/* ========== ЭКРАН РЕДАКТОРА ========== */
 function showEditor(){
-  режим="editor";
-  clearInterval(autoTimer);
-  clearInterval(eventTimer);
-
   screen.innerHTML=`
-    <div class="card">
-      <h3>🎬 Выбери сцену</h3>
-      <button onclick="setScene('school')">🏫 Школа</button>
-      <button onclick="setScene('camp')">🌲 Лагерь</button>
-      <button onclick="setScene('forest')">🌫 Лес</button>
-    </div>
 
     <div class="card">
       <h3>👥 Персонажи</h3>
       <input id="charName" placeholder="Имя персонажа">
-      <input id="charRole" placeholder="Характер (стерва, мачо...)">
-      <button onclick="addChar()">Добавить</button>
+      <button onclick="addCharacter()">Добавить персонажа</button>
       <div id="charList"></div>
     </div>
 
-    <button onclick="startGame()">▶ Запустить чат</button>
+    <div class="card">
+      <h3>✍️ Сюжет (реплики)</h3>
+
+      <select id="lineFrom"></select>
+      <textarea id="lineText" placeholder="Текст сообщения..."></textarea>
+
+      <button onclick="addLine()">Добавить реплику</button>
+
+      <button onclick="addSystemLine()">Добавить системное событие</button>
+
+      <div id="storyList"></div>
+    </div>
+
+    <button onclick="startGame()">▶ Играть</button>
   `;
-  renderCharList();
+
+  updateSelectors();
+  renderCharacters();
+  renderStory();
 }
 
-/* === СЦЕНА === */
-function setScene(id){
-  currentScene=id;
-  document.body.style.background=scenes[id].bg;
-}
-
-/* === ДОБАВИТЬ === */
-function addChar(){
+/* ========== ПЕРСОНАЖИ ========== */
+function addCharacter(){
   const name=document.getElementById("charName").value.trim();
-  const role=document.getElementById("charRole").value.trim();
-  if(!name||!role) return alert("Заполни");
+  if(!name) return alert("Введите имя");
 
-  персонажи.push({
-    name,role,color:randomColor()
+  characters.push({
+    id:"c"+Date.now(),
+    name:name,
+    color:randomColor()
   });
 
   document.getElementById("charName").value="";
-  document.getElementById("charRole").value="";
-  renderCharList();
+  updateSelectors();
+  renderCharacters();
 }
 
-function renderCharList(){
+function renderCharacters(){
   const list=document.getElementById("charList");
-  if(!list) return;
-  list.innerHTML=персонажи.map(p=>`
-    <div style="margin-top:8px">
-      <b>${p.name}</b> — ${p.role}
+  list.innerHTML=characters.map(c=>`
+    <div style="margin-top:6px">
+      <b>${c.name}</b>
     </div>
   `).join("");
 }
 
-/* === ЗАПУСК === */
-function startGame(){
-  if(персонажи.length<2) return alert("Нужно 2 персонажа");
+function updateSelectors(){
+  const sel=document.getElementById("lineFrom");
+  if(!sel) return;
 
-  режим="game";
+  sel.innerHTML=characters.map(c=>`
+    <option value="${c.id}">${c.name}</option>
+  `).join("");
+}
+
+/* ========== СЮЖЕТ ========== */
+function addLine(){
+  const from=document.getElementById("lineFrom").value;
+  const text=document.getElementById("lineText").value.trim();
+  if(!text) return alert("Введите текст");
+
+  story.push({from,text});
+  document.getElementById("lineText").value="";
+  renderStory();
+}
+
+function addSystemLine(){
+  const text=prompt("Введите системное событие:");
+  if(!text) return;
+  story.push({system:text});
+  renderStory();
+}
+
+function renderStory(){
+  const list=document.getElementById("storyList");
+  list.innerHTML=story.map((s,i)=>`
+    <div style="margin-top:6px">
+      ${s.system
+        ? `<i>⚡ ${s.system}</i>`
+        : `<b>${getChar(s.from).name}:</b> ${s.text}`
+      }
+    </div>
+  `).join("");
+}
+
+/* ========== ИГРА ========== */
+let step=0;
+
+function startGame(){
+  if(characters.length<1) return alert("Добавь персонажей");
+  if(story.length<1) return alert("Добавь реплики");
+
+  step=0;
   screen.innerHTML=`
     <button onclick="showEditor()">← Назад</button>
-    <div class="card">Сцена: ${scenes[currentScene].name}</div>
     <div class="chat" id="chat"></div>
 
-    <div style="display:flex;gap:6px;margin-top:12px">
-      <input id="msg" placeholder="Сообщение..." style="flex:1">
-      <button onclick="send()" style="width:auto">▶</button>
+    <div class="inputRow">
+      <input id="msg" placeholder="Напиши сообщение...">
+      <button onclick="send()">▶</button>
     </div>
   `;
 
-  addSystem("История началась...");
-
-  autoTimer=setInterval(autoTalk,7000);
-  eventTimer=setInterval(runEvent,10000);
+  nextStory();
 }
 
-/* === СООБЩЕНИЯ === */
+function send(){
+  const input=document.getElementById("msg");
+  const text=input.value.trim();
+  if(!text) return;
+  input.value="";
+
+  addMessage("Вы",text,"",true);
+
+  nextStory();
+}
+
+function nextStory(){
+  if(step>=story.length) return;
+
+  const part=story[step];
+  step++;
+
+  setTimeout(()=>{
+    if(part.system){
+      addSystem(part.system);
+    } else {
+      const c=getChar(part.from);
+      addMessage(c.name,part.text,c.color);
+    }
+  },1200);
+}
+
+/* ========== ЧАТ UI ========== */
 function addMessage(name,text,color,isPlayer=false){
   chat.innerHTML+=`
     <div class="message ${isPlayer?"player":""}">
@@ -257,44 +213,22 @@ function addSystem(text){
       <div class="bubble">${text}</div>
     </div>
   `;
+  chat.scrollTop=99999;
 }
 
-/* === ИГРОК === */
-function send(){
-  const t=document.getElementById("msg").value.trim();
-  if(!t) return;
-  document.getElementById("msg").value="";
-  addMessage("Вы",t,"",true);
+/* ========== ВСПОМОГАТЕЛЬНОЕ ========== */
+function getChar(id){
+  return characters.find(c=>c.id===id);
 }
 
-/* === АВТОДИАЛОГ === */
-function autoTalk(){
-  const a=персонажи[Math.floor(Math.random()*персонажи.length)];
-  const b=персонажи[Math.floor(Math.random()*персонажи.length)];
-
-  addMessage(a.name,`${b.name}, ты чувствуешь это?..`,a.color);
-}
-
-/* === СОБЫТИЕ ПО СЦЕНЕ === */
-function runEvent(){
-  const ev=scenes[currentScene].events;
-  addSystem(ev[Math.floor(Math.random()*ev.length)]);
-}
-
-/* === ЦВЕТ === */
 function randomColor(){
   const c=["#e11d48","#2563eb","#22c55e","#a855f7","#eab308"];
   return c[Math.floor(Math.random()*c.length)];
 }
 
 const screen=document.getElementById("screen");
-let chat=null;
-
-document.body.style.background=scenes.school.bg;
-
 showEditor();
-
-setTimeout(()=>{chat=document.getElementById("chat")},100);
 </script>
+
 </body>
 </html>
