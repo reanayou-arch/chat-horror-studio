@@ -3,136 +3,223 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chat Horror Studio</title>
+<title>Живой Чат — Horror Studio</title>
 
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:system-ui;background:#0b1220;color:#e5e7eb}
-.app{max-width:420px;margin:auto;height:100vh;display:flex;flex-direction:column}
-.header{padding:16px;font-size:20px;font-weight:700;background:#020617;border-bottom:1px solid rgba(255,255,255,.1)}
-.chat{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
-.message{display:flex;gap:8px}
-.player{align-self:flex-end}
-.avatar{width:36px;height:36px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:700}
-.bubble{background:#111827;border-radius:16px;padding:10px 14px;max-width:75%}
-.player .bubble{background:#2563eb}
-.name{font-size:12px;opacity:.7;margin-bottom:4px}
-.input{display:flex;gap:8px;padding:12px;border-top:1px solid rgba(255,255,255,.1)}
-input{flex:1;background:#020617;border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:10px;color:#fff}
-button{background:#2563eb;border:none;border-radius:14px;padding:10px 14px;color:#fff}
-.typing{opacity:.5;font-size:13px}
+body{
+  margin:0;
+  font-family:system-ui;
+  background:#0b1220;
+  color:#fff;
+}
+.app{
+  max-width:420px;
+  margin:auto;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+.header{
+  padding:16px;
+  font-size:20px;
+  font-weight:700;
+  background:#020617;
+}
+.chat{
+  flex:1;
+  padding:16px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.message{
+  display:flex;
+  gap:8px;
+}
+.player{
+  justify-content:flex-end;
+}
+.avatar{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+}
+.bubble{
+  padding:10px 14px;
+  border-radius:16px;
+  max-width:75%;
+}
+.name{
+  font-size:12px;
+  opacity:.7;
+  margin-bottom:4px;
+}
+.input{
+  display:flex;
+  gap:8px;
+  padding:12px;
+  border-top:1px solid rgba(255,255,255,.1);
+}
+input{
+  flex:1;
+  padding:10px;
+  border-radius:14px;
+  border:none;
+  outline:none;
+}
+button{
+  background:#2563eb;
+  border:none;
+  border-radius:14px;
+  padding:10px 14px;
+  color:white;
+}
+.typing{
+  opacity:.5;
+  font-size:13px;
+}
 </style>
 </head>
 
 <body>
 <div class="app">
-  <div class="header">Чат</div>
+  <div class="header">Живой Чат</div>
   <div class="chat" id="chat"></div>
+
   <div class="input">
-    <input id="input" placeholder="Написать сообщение…">
+    <input id="input" placeholder="Напиши сообщение...">
     <button onclick="send()">▶</button>
   </div>
 </div>
 
 <script>
-/* ================== НАСТРОЙКИ ================== */
-const AI_ON = false; // ← ПОТОМ ПЕРЕКЛЮЧИШЬ НА true
-/* =============================================== */
-
 const chat = document.getElementById("chat");
 const input = document.getElementById("input");
 
-const characters = [
+const персонажи = [
   {
-    name:"Вика",
-    role:"тревожная, боится неизвестности, часто сомневается",
-    trust:50,
-    localReplies:{
-      fear:["Мне страшно…","Я не выдерживаю это напряжение…"],
-      calm:["Хорошо… я стараюсь держаться."]
+    name:"Алина",
+    type:"стерва",
+    color:"#e11d48",
+    replies:{
+      hello:[
+        "О, ну привет. Только не думай, что мне интересно.",
+        "Ты опять здесь? Как неожиданно..."
+      ],
+      flirt:[
+        "Флирт? С тобой? Ахах, смешно.",
+        "Не переоценивай себя."
+      ],
+      angry:[
+        "Ты реально думаешь, что так можно разговаривать?",
+        "Ужас. Просто ужас."
+      ]
     }
   },
   {
-    name:"Саша",
-    role:"холодный, логичный, скрывает эмоции",
-    trust:30,
-    localReplies:{
-      fear:["Паника не поможет.","Соберись."],
-      calm:["Так лучше.","Продолжай."]
+    name:"Макс",
+    type:"мачо",
+    color:"#2563eb",
+    replies:{
+      hello:[
+        "Привет. Ты выглядишь... интересной.",
+        "Ну здравствуй. Рад тебя видеть."
+      ],
+      flirt:[
+        "Ты даже не представляешь, как мне хочется узнать тебя ближе.",
+        "Не бойся, я умею добиваться своего."
+      ],
+      angry:[
+        "Эй, полегче. Я не люблю, когда на меня давят.",
+        "Спокойно. Мы не враги."
+      ]
     }
   }
 ];
 
-let lastPlayerAction = Date.now();
+let lastPlayer = Date.now();
 
-/* ================== UI ================== */
-function addMessage(name,text,isPlayer=false){
+/* вывод сообщения */
+function addMessage(name,text,color,isPlayer=false){
   chat.innerHTML += `
     <div class="message ${isPlayer?"player":""}">
-      <div class="avatar">${name[0]}</div>
-      <div class="bubble">
+      ${isPlayer ? "" : `<div class="avatar" style="background:${color}">${name[0]}</div>`}
+      <div class="bubble" style="background:${isPlayer?"#22c55e":"#111827"}">
         <div class="name">${name}</div>
         ${text}
       </div>
-    </div>`;
+    </div>
+  `;
   chat.scrollTop = 99999;
 }
 
-/* ================== PLAYER ================== */
+/* игрок пишет */
 function send(){
   const text = input.value.trim();
   if(!text) return;
-  input.value = "";
-  lastPlayerAction = Date.now();
-  addMessage("Вы",text,true);
-  respond(text);
+  input.value="";
+  lastPlayer = Date.now();
+  addMessage("Вы",text,"",true);
+
+  реакция(text.toLowerCase());
 }
 
-/* ================== МОЗГ ================== */
-async function respond(text){
-  const char = characters[Math.floor(Math.random()*characters.length)];
-  showTyping(char.name, async ()=>{
-    if(AI_ON){
-      const aiText = await aiReply(char, text);
-      addMessage(char.name, aiText);
-    } else {
-      const localText = localReply(char, text);
-      addMessage(char.name, localText);
+/* персонажи реагируют */
+function реакция(text){
+  let mood="hello";
+  if(text.includes("люблю")||text.includes("красивая")) mood="flirt";
+  if(text.includes("дура")||text.includes("иди")) mood="angry";
+
+  const char = персонажи[Math.floor(Math.random()*персонажи.length)];
+  const replyList = char.replies[mood];
+
+  typing(char.name,()=>{
+    const reply = replyList[Math.floor(Math.random()*replyList.length)];
+    addMessage(char.name,reply,char.color);
+
+    // персонажи могут ответить друг другу сами
+    if(Math.random()>0.6){
+      setTimeout(()=>autoTalk(),2500);
     }
   });
 }
 
-/* ===== ЛОКАЛЬНЫЙ МОЗГ (ФОЛБЭК) ===== */
-function localReply(char, text){
-  const t = text.toLowerCase();
-  let mood = t.includes("страш") ? "fear" : "calm";
-  char.trust += (mood==="calm"?3:-5);
-  char.trust = Math.max(0,Math.min(100,char.trust));
-  if(char.trust < 30) return "Я не уверен, что тебе можно доверять.";
-  if(char.trust > 70) return "Я с тобой. Что дальше?";
-  const arr = char.localReplies[mood];
-  return arr[Math.floor(Math.random()*arr.length)];
+/* автодиалог между персонажами */
+function autoTalk(){
+  const a = персонажи[0];
+  const b = персонажи[1];
+
+  typing(a.name,()=>{
+    addMessage(a.name,"Макс, ты опять строишь из себя героя?",a.color);
+    typing(b.name,()=>{
+      addMessage(b.name,"Алина, ты просто ревнуешь 😉",b.color);
+    });
+  });
 }
 
-/* ===== РЕАЛЬНЫЙ ИИ (ПОКА ЗАГЛУШКА) ===== */
-async function aiReply(char, playerText){
-  // ЗДЕСЬ ПОТОМ БУДЕТ ЗАПРОС К ИИ ЧЕРЕЗ СЕРВЕР
-  // Контекст: роль персонажа + последние сообщения + правила мира
-  return "…"; // заглушка
-}
-
-/* ================== TYPING ================== */
-function showTyping(name, cb){
-  const t = document.createElement("div");
+/* печатает */
+function typing(name,callback){
+  const t=document.createElement("div");
   t.className="typing";
-  t.innerText=`${name} печатает…`;
+  t.innerText=name+" печатает...";
   chat.appendChild(t);
   chat.scrollTop=99999;
-  setTimeout(()=>{t.remove();cb();},2000+Math.random()*3000);
+
+  setTimeout(()=>{
+    t.remove();
+    callback();
+  },1500+Math.random()*2000);
 }
 
-/* ================== AUTOSTART ================== */
-addMessage("Вика","Ты правда здесь?..");
+/* старт */
+addMessage("Алина","Ну и кто тебя сюда пустил?..","#e11d48");
+setTimeout(()=>addMessage("Макс","Спокойно. Может он не такой уж плохой.","#2563eb"),3000);
 </script>
+
 </body>
 </html>
