@@ -2,19 +2,26 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Редактор истории</title>
+
   <style>
     body {
-      font-family: sans-serif;
-      background: #0b1220;
+      margin: 0;
+      font-family: system-ui;
+      background: #050b18;
       color: white;
       padding: 20px;
     }
 
-    input, textarea, select {
+    h1 {
+      text-align: center;
+    }
+
+    input {
       width: 100%;
       padding: 12px;
-      margin: 8px 0;
+      margin: 10px 0;
       border-radius: 12px;
       border: none;
       font-size: 16px;
@@ -22,132 +29,51 @@
 
     button {
       width: 100%;
-      padding: 15px;
-      margin-top: 10px;
-      font-size: 18px;
-      border-radius: 14px;
+      padding: 14px;
       border: none;
+      border-radius: 14px;
       background: #2563eb;
       color: white;
+      font-size: 18px;
+      margin-top: 10px;
       cursor: pointer;
     }
 
-    .char {
-      margin-top: 10px;
-      padding: 10px;
-      background: rgba(255,255,255,0.05);
-      border-radius: 12px;
+    .charList {
+      margin-top: 20px;
     }
 
-    img {
+    .charItem {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 14px;
+      margin-bottom: 10px;
+    }
+
+    .charItem img {
       width: 45px;
       height: 45px;
       border-radius: 50%;
       object-fit: cover;
-      margin-right: 10px;
-    }
-
-    .row {
-      display: flex;
-      align-items: center;
     }
   </style>
 </head>
 <body>
 
-  <h1>✍️ Панель автора</h1>
-
-  <h2>Название истории</h2>
-  <input id="title" placeholder="Например: Палаточный ужас">
-
-  <h2>Описание сюжета (контекст)</h2>
-  <textarea id="plot" rows="4"
-    placeholder="Например: Герои едут в лагерь, но там происходит что-то странное..."></textarea>
-
-  <h2>Персонажи</h2>
+  <h1>👥 Персонажи</h1>
 
   <input id="charName" placeholder="Имя персонажа">
-  <input id="charRole" placeholder="Характер (например: тревожный парень)">
-  <input type="file" id="charAvatar">
+  <input id="charAvatar" type="file" accept="image/*">
 
   <button onclick="addCharacter()">➕ Добавить персонажа</button>
 
-  <div id="charList"></div>
+  <div class="charList" id="charList"></div>
 
-  <button onclick="saveStory()">💾 Сохранить историю</button>
-  <button onclick="startGame()">▶ Играть</button>
+  <button onclick="goBack()">⬅ Назад</button>
 
-<script>
-  let characters = [];
-
-  function addCharacter() {
-    const name = document.getElementById("charName").value.trim();
-    const role = document.getElementById("charRole").value.trim();
-    const file = document.getElementById("charAvatar").files[0];
-
-    if (!name || !role || !file) {
-      alert("Заполни имя, характер и выбери аватар.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      characters.push({
-        name,
-        role,
-        avatar: e.target.result
-      });
-
-      renderCharacters();
-
-      document.getElementById("charName").value = "";
-      document.getElementById("charRole").value = "";
-      document.getElementById("charAvatar").value = "";
-    };
-
-    reader.readAsDataURL(file);
-  }
-
-  function renderCharacters() {
-    const list = document.getElementById("charList");
-    list.innerHTML = "";
-
-    characters.forEach(c => {
-      list.innerHTML += `
-        <div class="char">
-          <div class="row">
-            <img src="${c.avatar}">
-            <b>${c.name}</b> — ${c.role}
-          </div>
-        </div>
-      `;
-    });
-  }
-
-  function saveStory() {
-    const title = document.getElementById("title").value.trim();
-    const plot = document.getElementById("plot").value.trim();
-
-    if (!title || !plot || characters.length === 0) {
-      alert("Заполни название, сюжет и добавь хотя бы одного персонажа.");
-      return;
-    }
-
-    const story = {
-      title,
-      plot,
-      characters
-    };
-
-    localStorage.setItem("story", JSON.stringify(story));
-    alert("История сохранена!");
-  }
-
-  function startGame() {
-    saveStory();
-    location.href = "play.html";
-  }
-</script>
-
+  <script src="ja/editor.js"></script>
 </body>
 </html>
