@@ -3,89 +3,77 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Палаточный ужас — чат</title>
+  <title>Чат-история</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-
     body {
       margin: 0;
-      background: linear-gradient(180deg, #05070c, #0a1020);
-      color: #fff;
-      height: 100vh;
+      font-family: Arial;
+      background: #0b1220;
+      color: white;
       display: flex;
       flex-direction: column;
+      height: 100vh;
     }
 
     header {
-      padding: 16px;
+      padding: 15px;
       text-align: center;
       font-size: 20px;
-      font-weight: 600;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-weight: bold;
+      background: #111a2e;
     }
 
     #chat {
       flex: 1;
       overflow-y: auto;
-      padding: 12px;
+      padding: 15px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
 
-    .message {
+    .msg {
       display: flex;
       align-items: flex-end;
-      max-width: 85%;
-      gap: 8px;
+      gap: 10px;
+      max-width: 90%;
     }
 
-    .bot {
-      align-self: flex-start;
-    }
-
-    .user {
+    .msg.user {
       align-self: flex-end;
       flex-direction: row-reverse;
-    }
-
-    .avatar {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: #333;
-      flex-shrink: 0;
     }
 
     .bubble {
       padding: 10px 14px;
       border-radius: 16px;
-      line-height: 1.35;
+      max-width: 70%;
       word-wrap: break-word;
       white-space: pre-wrap;
-      max-width: 100%;
-    }
-
-    .bot .bubble {
-      background: rgba(255,255,255,0.08);
-      border-bottom-left-radius: 6px;
+      font-size: 15px;
     }
 
     .user .bubble {
       background: #2563eb;
-      border-bottom-right-radius: 6px;
+    }
+
+    .bot .bubble {
+      background: #222;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: gray;
+      flex-shrink: 0;
     }
 
     footer {
-      padding: 10px;
       display: flex;
-      gap: 8px;
-      border-top: 1px solid rgba(255,255,255,0.08);
-      background: #05070c;
+      padding: 10px;
+      background: #111a2e;
     }
 
     input {
@@ -98,89 +86,80 @@
     }
 
     button {
+      margin-left: 10px;
       background: #22c55e;
       border: none;
-      color: #000;
-      font-weight: 600;
-      padding: 0 16px;
+      padding: 12px 16px;
       border-radius: 12px;
-      cursor: pointer;
-    }
-
-    .system {
-      align-self: center;
-      font-size: 13px;
-      opacity: 0.6;
+      font-size: 18px;
+      color: white;
     }
   </style>
 </head>
+
 <body>
 
-<header>Палаточный ужас — чат</header>
+  <header>Палаточный ужас — чат</header>
 
-<div id="chat"></div>
+  <div id="chat"></div>
 
-<footer>
-  <input id="input" placeholder="Напиши сообщение..." />
-  <button onclick="send()">▶</button>
-</footer>
+  <footer>
+    <input id="text" placeholder="Напиши сообщение..." />
+    <button onclick="send()">➤</button>
+  </footer>
 
-<script>
-  const chat = document.getElementById("chat");
-  const input = document.getElementById("input");
+  <script>
+    const chat = document.getElementById("chat");
 
-  function addMessage(text, who = "bot") {
-    const msg = document.createElement("div");
-    msg.className = "message " + who;
+    function addMessage(text, who) {
+      const div = document.createElement("div");
+      div.className = "msg " + who;
 
-    const avatar = document.createElement("div");
-    avatar.className = "avatar";
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
 
-    const bubble = document.createElement("div");
-    bubble.className = "bubble";
-    bubble.textContent = text;
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.innerText = text;
 
-    msg.appendChild(avatar);
-    msg.appendChild(bubble);
-    chat.appendChild(msg);
+      div.appendChild(avatar);
+      div.appendChild(bubble);
 
-    chat.scrollTop = chat.scrollHeight;
-  }
-
-  // старт сюжета
-  addMessage("Привет... ты уже собрал вещи?");
-  addMessage("Завтра лагерь. У меня плохое предчувствие...");
-
-  async function send() {
-    const text = input.value.trim();
-    if (!text) return;
-
-    addMessage(text, "user");
-    input.value = "";
-
-    addMessage("печатает...", "system");
-
-    try {
-      const res = await fetch(
-        "https://chat-horror-api.onrender.com/chat",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text }),
-        }
-      );
-
-      chat.lastChild.remove();
-
-      const data = await res.json();
-      addMessage(data.reply || "…");
-
-    } catch (e) {
-      chat.lastChild.remove();
-      addMessage("Сервер не отвечает 😢");
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
     }
-  }
-</script>
+
+    async function send() {
+      const input = document.getElementById("text");
+      const message = input.value.trim();
+      if (!message) return;
+
+      addMessage(message, "user");
+      input.value = "";
+
+      try {
+        const res = await fetch("https://chat-horror-api.onrender.com/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: message,
+            character: "Лена"
+          })
+        });
+
+        const data = await res.json();
+        addMessage(data.reply, "bot");
+
+      } catch (e) {
+        addMessage("❌ Сервер не отвечает", "bot");
+      }
+    }
+
+    // стартовое сообщение
+    addMessage("Привет... ты уже собрал вещи?", "bot");
+  </script>
 
 </body>
 </html>
