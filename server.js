@@ -7,29 +7,36 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-/* Проверка что сервер работает */
+/* ✅ Проверка что сервер жив */
 app.get("/", (req, res) => {
   res.send("Chat Horror API работает!");
 });
 
-/* Главный чат-запрос */
-app.post("/chat", async (req, res) => {
-  const { message } = req.body;
+/* ✅ OpenAI клиент */
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
+/* ✅ Главный чат */
+app.post("/chat", async (req, res) => {
   try {
+    const { message } = req.body;
+
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content:
-            "Ты персонаж хоррор-чата. Отвечай живо, коротко, как человек.",
+          content: `
+Ты персонаж хоррор-чат истории.
+Отвечай коротко, живо, как человек.
+Не пиши длинных текстов.
+`,
         },
-        { role: "user", content: message },
+        {
+          role: "user",
+          content: message,
+        },
       ],
     });
 
@@ -38,11 +45,14 @@ app.post("/chat", async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({
-      reply: "Ошибка сервера 😭",
+      reply: "Ошибка сервера 😢",
     });
   }
 });
 
-/* Render требует PORT */
+/* ✅ Render требует PORT */
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server started on " + PORT));
+
+app.listen(PORT, () => {
+  console.log("Server started on port " + PORT);
+});
