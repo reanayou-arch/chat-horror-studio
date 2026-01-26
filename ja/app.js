@@ -1,3 +1,5 @@
+const storiesList = document.getElementById("storiesList");
+
 let stories = JSON.parse(localStorage.getItem("stories") || "[]");
 
 function saveStories() {
@@ -5,44 +7,54 @@ function saveStories() {
 }
 
 function renderStories() {
-  const list = document.getElementById("storiesList");
+  storiesList.innerHTML = "";
 
   if (stories.length === 0) {
-    list.innerHTML = "<p>Историй пока нет</p>";
+    storiesList.innerHTML = "<p>Историй пока нет...</p>";
     return;
   }
 
-  list.innerHTML = stories.map((s, i) => `
-    <div class="storyItem">
-      <h3>${s.title}</h3>
-      <p>${s.desc}</p>
-      <button onclick="startStory(${i})">▶ Начать</button>
-    </div>
-  `).join("");
+  stories.forEach((story, index) => {
+    const div = document.createElement("div");
+    div.className = "storyItem";
+
+    div.innerHTML = `
+      <h3>${story.title}</h3>
+      <p>${story.desc}</p>
+      <button onclick="startStory(${index})">▶ Начать чат</button>
+    `;
+
+    storiesList.appendChild(div);
+  });
 }
 
 function createStory() {
-  const title = document.getElementById("storyTitle").value.trim();
-  const desc = document.getElementById("storyDesc").value.trim();
+  const title = document.getElementById("titleInput").value.trim();
+  const desc = document.getElementById("descInput").value.trim();
 
-  if (!title) return alert("Введите название!");
+  if (!title) {
+    alert("Введите название истории!");
+    return;
+  }
 
   stories.push({
     title,
     desc,
-    chat: []
+    chat: [
+      { from: "Лена", text: "Привет... ты готов к лагерю?" }
+    ]
   });
 
   saveStories();
   renderStories();
 
-  document.getElementById("storyTitle").value = "";
-  document.getElementById("storyDesc").value = "";
+  document.getElementById("titleInput").value = "";
+  document.getElementById("descInput").value = "";
 }
 
 function startStory(index) {
-  localStorage.setItem("playIndex", index);
-  location.href = "play.html";
+  localStorage.setItem("activeStory", index);
+  window.location.href = "play.html";
 }
 
 renderStories();
