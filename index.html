@@ -1,23 +1,22 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat Story Studio</title>
-
-  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
+  <h1>📖 Chat Story Studio</h1>
+
   <div class="container">
-    <h1>📖 Chat Story Studio</h1>
 
     <div class="card">
       <h2>Создать историю</h2>
 
-      <input id="storyTitle" placeholder="Название истории..." />
-
-      <textarea id="storyDesc" placeholder="Описание сюжета..."></textarea>
+      <input id="titleInput" placeholder="Название истории...">
+      <textarea id="descInput" placeholder="Описание сюжета..."></textarea>
 
       <button onclick="createStory()">➕ Создать историю</button>
     </div>
@@ -26,10 +25,9 @@
       <h2>Ваши истории</h2>
       <div id="storiesList"></div>
     </div>
+
   </div>
 
-<!-- ⚠️ ВАЖНО: папка ja -->
-<script src="ja/app.js"></script>
-
+  <script src="ja/app.js"></script>
 </body>
 </html>
