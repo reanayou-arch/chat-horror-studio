@@ -4,50 +4,33 @@ import OpenAI from "openai";
 
 const app = express();
 
-/* -------------------- */
-/* 1) Middleware */
-/* -------------------- */
-
+app.use(cors());
 app.use(express.json());
-
-app.use(
-  cors({
-    origin: "*", // разрешаем запросы с GitHub Pages
-  })
-);
-
-/* -------------------- */
-/* 2) OpenAI Client */
-/* -------------------- */
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-/* -------------------- */
-/* 3) Проверка сервера */
-/* -------------------- */
 
-// Главная страница
+// ✅ Проверка что сервер жив
 app.get("/", (req, res) => {
   res.send("✅ Chat Horror API работает!");
 });
 
-// Если кто-то открыл /chat через браузер
+
+// ✅ Если кто-то открыл /chat в браузере
 app.get("/chat", (req, res) => {
-  res.send("⚠️ Используй POST запрос, а не GET.");
+  res.send("❗ Используй POST запрос, а не GET");
 });
 
-/* -------------------- */
-/* 4) Основной чат */
-/* -------------------- */
 
+// ✅ Основной чат-запрос
 app.post("/chat", async (req, res) => {
   try {
-    const { message, character } = req.body;
+    const { message } = req.body;
 
     if (!message) {
-      return res.json({ reply: "❌ Сообщение пустое" });
+      return res.json({ reply: "Ошибка: нет сообщения" });
     }
 
     const completion = await client.chat.completions.create({
@@ -55,38 +38,28 @@ app.post("/chat", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `
-Ты персонаж хоррор-чат истории.
-Отвечай коротко, естественно, как живой человек.
-Не пиши длинных рассказов.
-Персонаж: ${character || "Неизвестный"}
-`,
+          content:
+            "Ты персонаж хоррор-чата. Отвечай коротко, живо, как реальный человек. Продолжай сюжет.",
         },
-        {
-          role: "user",
-          content: message,
-        },
+        { role: "user", content: message },
       ],
     });
 
     res.json({
       reply: completion.choices[0].message.content,
     });
-  } catch (error) {
-    console.error("Ошибка API:", error);
-
+  } catch (err) {
+    console.error("Ошибка OpenAI:", err);
     res.json({
       reply: "❌ Ошибка сервера. Проверь API ключ.",
     });
   }
 });
 
-/* -------------------- */
-/* 5) Render PORT */
-/* -------------------- */
 
+// ✅ ВАЖНО: Render требует process.env.PORT
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("✅ Server started on port " + PORT);
+  console.log("✅ Server started on port", PORT);
 });
