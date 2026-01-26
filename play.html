@@ -1,52 +1,144 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Chat Horror Studio</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat Horror</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0b1220;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      padding: 15px;
+      font-size: 22px;
+      font-weight: bold;
+      background: #111c33;
+    }
+
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .msg {
+      max-width: 75%;
+      padding: 12px;
+      border-radius: 15px;
+      font-size: 16px;
+      line-height: 1.3;
+    }
+
+    .user {
+      background: #1f8cff;
+      align-self: flex-end;
+    }
+
+    .bot {
+      background: #222;
+      align-self: flex-start;
+    }
+
+    footer {
+      display: flex;
+      padding: 10px;
+      background: #111c33;
+    }
+
+    input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+    }
+
+    button {
+      margin-left: 10px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 10px;
+      background: #1f8cff;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body>
-  <div class="app">
 
-    <header class="header">
-      Chat Horror Studio
-    </header>
+  <header>📱 Chat Horror</header>
 
-    <main class="screen">
+  <div id="chat"></div>
 
-      <button class="btn back" onclick="location.href='index.html'">
-        ← Назад
-      </button>
+  <footer>
+    <input id="text" placeholder="Напиши сообщение..." />
+    <button onclick="send()">➤</button>
+  </footer>
 
-      <h2 class="story-title">Последнее дыхание</h2>
-      <div class="genre">Хоррор</div>
+<script>
+const chat = document.getElementById("chat");
+const input = document.getElementById("text");
 
-      <div class="chat">
+// ✅ добавление сообщения в чат
+function addMessage(text, type) {
+  const div = document.createElement("div");
+  div.className = "msg " + type;
+  div.innerText = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
 
-        <div class="message left">
-          <div class="avatar">В</div>
-          <div class="bubble">
-            <div class="name">Вика</div>
-            <div class="text">Господи, где мы? 😟</div>
-          </div>
-        </div>
+// ✅ отправка игрока → API → ответ
+async function send() {
+  const text = input.value.trim();
+  if (!text) return;
 
-        <div class="message left">
-          <div class="avatar">С</div>
-          <div class="bubble">
-            <div class="name">Саша</div>
-            <div class="text">Не знаю… Но мне здесь не нравится.</div>
-          </div>
-        </div>
+  addMessage(text, "user");
+  input.value = "";
 
-      </div>
+  addMessage("...", "bot");
 
-      <button class="btn primary">Далее</button>
+  const botMsg = document.querySelector(".bot:last-child");
 
-    </main>
+  try {
+    const res = await fetch("https://chat-horror-api.onrender.com/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: text })
+    });
 
-  </div>
+    const data = await res.json();
+    botMsg.innerText = data.reply;
+
+  } catch (err) {
+    botMsg.innerText = "❌ Ошибка подключения";
+  }
+}
+
+// Enter отправка
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") send();
+});
+
+// стартовое сообщение
+addMessage("Привет... Ты уверен что хочешь сюда писать?", "bot");
+</script>
+
 </body>
 </html>
