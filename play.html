@@ -2,7 +2,12 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+
+  <!-- ✅ ГЛАВНОЕ: мобильный экран -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Игра</title>
+
   <style>
     body {
       margin: 0;
@@ -15,23 +20,22 @@
     }
 
     header {
-      padding: 15px;
-      font-size: 22px;
-      font-weight: bold;
+      padding: 12px;
+      font-size: 18px;
       text-align: center;
-      background: rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.06);
     }
 
     #chat {
       flex: 1;
       overflow-y: auto;
-      padding: 15px;
+      padding: 12px;
     }
 
     .msg {
       display: flex;
-      margin: 10px 0;
-      max-width: 80%;
+      margin: 8px 0;
+      max-width: 75%;
     }
 
     .me {
@@ -40,11 +44,14 @@
     }
 
     .bubble {
-      padding: 12px;
-      border-radius: 14px;
+      padding: 10px 14px;
+      border-radius: 16px;
       background: rgba(255,255,255,0.08);
-      white-space: pre-wrap;
+      font-size: 15px;
+      line-height: 1.3;
+      word-break: break-word;
       display: inline-block;
+      width: fit-content;
       max-width: 100%;
     }
 
@@ -53,31 +60,32 @@
     }
 
     img {
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       object-fit: cover;
-      margin-right: 10px;
+      margin-right: 8px;
     }
 
     footer {
       display: flex;
       padding: 10px;
-      background: rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.06);
     }
 
     input {
       flex: 1;
       padding: 12px;
-      border-radius: 12px;
+      border-radius: 14px;
       border: none;
-      font-size: 16px;
+      font-size: 15px;
+      outline: none;
     }
 
     button {
-      margin-left: 10px;
-      padding: 12px 18px;
-      border-radius: 12px;
+      margin-left: 8px;
+      width: 52px;
+      border-radius: 14px;
       border: none;
       background: #22c55e;
       font-size: 18px;
@@ -85,6 +93,7 @@
     }
   </style>
 </head>
+
 <body>
 
 <header id="title"></header>
@@ -92,7 +101,7 @@
 <div id="chat"></div>
 
 <footer>
-  <input id="text" placeholder="Напиши сообщение...">
+  <input id="text" placeholder="Сообщение...">
   <button onclick="send()">▶</button>
 </footer>
 
@@ -100,7 +109,7 @@
   const story = JSON.parse(localStorage.getItem("story"));
 
   if (!story) {
-    alert("История не найдена! Вернись в редактор.");
+    alert("История не найдена. Вернись в редактор.");
     location.href = "editor.html";
   }
 
@@ -129,25 +138,28 @@
     addMessage(message, "me");
     input.value = "";
 
-    const response = await fetch("https://chat-horror-api.onrender.com/chat", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        message,
-        story: story.plot,
-        characters: story.characters
-      })
-    });
+    try {
+      const response = await fetch(
+        "https://chat-horror-api.onrender.com/chat",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message,
+            story: story.plot,
+            characters: story.characters
+          })
+        }
+      );
 
-    if (!response.ok) {
+      const data = await response.json();
+
+      const botChar = story.characters[0];
+      addMessage(data.reply, "bot", botChar.avatar);
+
+    } catch (err) {
       addMessage("❌ Сервер не отвечает", "bot", story.characters[0].avatar);
-      return;
     }
-
-    const data = await response.json();
-
-    const botChar = story.characters[0]; 
-    addMessage(data.reply, "bot", botChar.avatar);
   }
 </script>
 
