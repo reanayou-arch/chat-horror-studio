@@ -3,29 +3,50 @@ import cors from "cors";
 import OpenAI from "openai";
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
+// ✅ Проверка что сервер работает
+app.get("/", (req, res) => {
+  res.send("Chat Horror API работает!");
+});
+
+// ✅ OpenAI клиент
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// ✅ Главный чат-эндпоинт
 app.post("/chat", async (req, res) => {
-  const { message } = req.body;
+  try {
+    const { message } = req.body;
 
-  const completion = await client.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content:
-          "Ты персонаж из хоррор-чата. Отвечай коротко, живо, как человек.",
-      },
-      { role: "user", content: message },
-    ],
-  });
+    if (!message) {
+      return res.status(400).json({ error: "Нет message" });
+    }
 
-  res.json({ reply: completion.choices[0].message.content });
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "Ты персонаж хоррор-чата. Отвечай коротко, живо, как человек.",
+        },
+        { role: "user", content: message },
+      ],
+    });
+
+    res.json({
+      reply: completion.choices[0].message.content,
+    });
+  } catch (err) {
+    console.error("Ошибка:", err);
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
 });
 
-app.listen(3000, () => console.log("Server started"));
+// ✅ Render порт
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("Server started on port", PORT));
