@@ -1,32 +1,24 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Story Chat</title>
-
-  <link rel="stylesheet" href="css/style.css"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Чат истории</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<div class="chatContainer">
+  <h1 id="storyTitle">История</h1>
 
-  <div class="topBar">
-    <button onclick="goBack()">← Назад</button>
-    <h2 id="storyName"></h2>
-  </div>
-
-  <div id="chatBox" class="chatBox"></div>
+  <div class="chatBox" id="chatBox"></div>
 
   <div class="inputBar">
-    <input id="msgInput" placeholder="Напиши сообщение..." />
+    <input id="msgInput" placeholder="Напиши сообщение...">
     <button onclick="sendMessage()">➤</button>
   </div>
 
-</div>
+  <button class="backBtn" onclick="goBack()">⬅ Назад</button>
 
-<!-- ⚠️ ВАЖНО: папка ja -->
-<script src="ja/play.js"></script>
-
+  <script src="ja/play.js"></script>
 </body>
 </html>
