@@ -1,45 +1,48 @@
-const screen = document.getElementById("screen");
-
 let stories = JSON.parse(localStorage.getItem("stories") || "[]");
 
-function save() {
+function saveStories() {
   localStorage.setItem("stories", JSON.stringify(stories));
 }
 
-function renderHome() {
-  screen.innerHTML = `
-    <button onclick="createStory()">➕ Новая история</button>
+function renderStories() {
+  const list = document.getElementById("storiesList");
 
-    ${
-      stories.length === 0
-        ? `<div class="empty">Историй пока нет</div>`
-        : stories.map((s, i) => `
-            <div class="story">
-              <div class="story-title">${s.title}</div>
-              <div class="story-meta">${s.lines.length} сообщений</div>
-              <button onclick="play(${i})">▶ Играть</button>
-            </div>
-          `).join("")
-    }
-  `;
+  if (stories.length === 0) {
+    list.innerHTML = "<p>Историй пока нет</p>";
+    return;
+  }
+
+  list.innerHTML = stories.map((s, i) => `
+    <div class="storyItem">
+      <h3>${s.title}</h3>
+      <p>${s.desc}</p>
+      <button onclick="startStory(${i})">▶ Начать</button>
+    </div>
+  `).join("");
 }
 
-window.createStory = function () {
-  const title = prompt("Название истории");
-  if (!title) return;
+function createStory() {
+  const title = document.getElementById("storyTitle").value.trim();
+  const desc = document.getElementById("storyDesc").value.trim();
+
+  if (!title) return alert("Введите название!");
 
   stories.push({
     title,
-    lines: [{ text: "Начало истории" }]
+    desc,
+    chat: []
   });
 
-  save();
-  renderHome();
-};
+  saveStories();
+  renderStories();
 
-window.play = function (index) {
+  document.getElementById("storyTitle").value = "";
+  document.getElementById("storyDesc").value = "";
+}
+
+function startStory(index) {
   localStorage.setItem("playIndex", index);
   location.href = "play.html";
-};
+}
 
-renderHome();
+renderStories();
