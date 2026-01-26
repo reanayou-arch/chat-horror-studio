@@ -3,185 +3,327 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Панель автора</title>
+  <title>Chat Story Studio</title>
 
   <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: #0b1220;
-      color: white;
-      padding: 20px;
+    *{box-sizing:border-box;font-family:system-ui;}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,#05070c,#0a1020);
+      color:white;
+      height:100vh;
+      display:flex;
+      flex-direction:column;
     }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 25px;
+    header{
+      padding:14px;
+      text-align:center;
+      font-size:20px;
+      font-weight:700;
+      border-bottom:1px solid rgba(255,255,255,0.08);
     }
 
-    .block {
-      background: rgba(255,255,255,0.05);
-      padding: 15px;
-      border-radius: 16px;
-      margin-bottom: 20px;
+    .screen{
+      flex:1;
+      overflow:auto;
+      padding:14px;
     }
 
-    input, textarea {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 12px;
-      border: none;
-      font-size: 16px;
-      outline: none;
-      box-sizing: border-box;
+    .card{
+      background:rgba(255,255,255,0.06);
+      padding:14px;
+      border-radius:18px;
+      margin-bottom:14px;
     }
 
-    textarea {
-      height: 90px;
-      resize: none;
+    input,textarea{
+      width:100%;
+      padding:12px;
+      margin-top:8px;
+      border-radius:12px;
+      border:none;
+      outline:none;
+      font-size:15px;
     }
 
-    button {
-      width: 100%;
-      padding: 14px;
-      margin-top: 12px;
-      border: none;
-      border-radius: 14px;
-      font-size: 18px;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
+    button{
+      width:100%;
+      padding:14px;
+      border:none;
+      border-radius:14px;
+      margin-top:10px;
+      font-weight:700;
+      cursor:pointer;
+      background:#2563eb;
+      color:white;
+      font-size:16px;
     }
 
-    .char {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 10px;
-      background: rgba(255,255,255,0.05);
-      padding: 10px;
-      border-radius: 14px;
+    .chat{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding-bottom:70px;
     }
 
-    .avatar {
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      background: gray;
-      object-fit: cover;
-      flex-shrink: 0;
+    .msg{
+      display:flex;
+      gap:8px;
+      max-width:85%;
+      align-items:flex-end;
     }
 
-    .char-name {
-      font-size: 18px;
-      font-weight: bold;
+    .bot{align-self:flex-start;}
+    .user{align-self:flex-end;flex-direction:row-reverse;}
+
+    .avatar{
+      width:36px;
+      height:36px;
+      border-radius:50%;
+      background:#333;
+      flex-shrink:0;
+      overflow:hidden;
+    }
+    .avatar img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+
+    .bubble{
+      padding:10px 14px;
+      border-radius:16px;
+      white-space:pre-wrap;
+      word-wrap:break-word;
+    }
+
+    .bot .bubble{
+      background:rgba(255,255,255,0.08);
+      border-bottom-left-radius:6px;
+    }
+
+    .user .bubble{
+      background:#2563eb;
+      border-bottom-right-radius:6px;
+    }
+
+    footer{
+      display:flex;
+      gap:8px;
+      padding:10px;
+      border-top:1px solid rgba(255,255,255,0.08);
+      background:#05070c;
+    }
+
+    footer input{
+      flex:1;
+      margin:0;
+    }
+
+    footer button{
+      width:auto;
+      padding:0 18px;
+      margin:0;
+      background:#22c55e;
+      color:black;
+    }
+
+    .small{
+      opacity:0.6;
+      font-size:13px;
+      margin-top:4px;
     }
   </style>
 </head>
 
 <body>
 
-<h1>✍ Панель автора</h1>
+<header>Chat Story Studio</header>
 
-<!-- Название -->
-<div class="block">
-  <h2>1. Название истории</h2>
-  <input id="title" placeholder="Например: Палаточный ужас">
-</div>
-
-<!-- Описание -->
-<div class="block">
-  <h2>2. Сюжетное описание</h2>
-  <textarea id="story" placeholder="Опиши завязку сюжета..."></textarea>
-</div>
-
-<!-- Персонажи -->
-<div class="block">
-  <h2>3. Персонажи</h2>
-
-  <input id="charName" placeholder="Имя персонажа">
-  <input id="charAvatar" type="file" accept="image/*">
-
-  <button onclick="addCharacter()">➕ Добавить персонажа</button>
-
-  <div id="charList"></div>
-</div>
-
-<!-- Запуск -->
-<div class="block">
-  <h2>4. Запуск игры</h2>
-  <button onclick="startGame()">▶ Начать чат-историю</button>
-</div>
+<div class="screen" id="screen"></div>
 
 <script>
-  let characters = [];
+/* ===============================
+   ДАННЫЕ ИСТОРИИ
+================================ */
 
-  function addCharacter() {
-    const name = document.getElementById("charName").value.trim();
-    const file = document.getElementById("charAvatar").files[0];
+let story = {
+  title: "",
+  plot: "",
+  characters: [],
+};
 
-    if (!name) return alert("Введите имя персонажа!");
+/* ===============================
+   РЕНДЕР ПАНЕЛИ АВТОРА
+================================ */
 
+function renderAuthorPanel(){
+  screen.innerHTML = `
+    <div class="card">
+      <h2>📖 Панель автора</h2>
+
+      <input id="title" placeholder="Название истории"
+        value="${story.title}"/>
+
+      <textarea id="plot" rows="4"
+        placeholder="Описание сюжета (ИИ будет от этого отталкиваться)">${story.plot}</textarea>
+
+      <button onclick="saveStory()">💾 Сохранить историю</button>
+    </div>
+
+    <div class="card">
+      <h2>👥 Персонажи</h2>
+
+      <input id="charName" placeholder="Имя персонажа"/>
+
+      <input type="file" id="charImg"/>
+
+      <button onclick="addCharacter()">➕ Добавить персонажа</button>
+
+      <div class="small">
+        ${story.characters.map(c=>`• ${c.name}`).join("<br>")}
+      </div>
+    </div>
+
+    <button onclick="startChat()">▶ Начать чат-историю</button>
+  `;
+}
+
+/* ===============================
+   СОХРАНЕНИЕ
+================================ */
+
+function saveStory(){
+  story.title = document.getElementById("title").value;
+  story.plot  = document.getElementById("plot").value;
+
+  localStorage.setItem("story", JSON.stringify(story));
+  alert("История сохранена!");
+}
+
+/* ===============================
+   ДОБАВИТЬ ПЕРСОНАЖА
+================================ */
+
+function addCharacter(){
+  const name = document.getElementById("charName").value.trim();
+  const file = document.getElementById("charImg").files[0];
+
+  if(!name) return alert("Введите имя!");
+
+  if(file){
     const reader = new FileReader();
-
-    reader.onload = function () {
-      const avatar = reader.result;
-
-      characters.push({ name, avatar });
-
-      renderCharacters();
-
-      document.getElementById("charName").value = "";
-      document.getElementById("charAvatar").value = "";
+    reader.onload = ()=>{
+      story.characters.push({name, avatar: reader.result});
+      renderAuthorPanel();
     };
+    reader.readAsDataURL(file);
+  } else {
+    story.characters.push({name, avatar: ""});
+    renderAuthorPanel();
+  }
+}
 
-    if (file) {
-      reader.readAsDataURL(file);
-    } else {
-      characters.push({ name, avatar: "" });
-      renderCharacters();
-    }
+/* ===============================
+   ЧАТ ИГРЫ
+================================ */
+
+function startChat(){
+  if(!story.title) return alert("Название истории обязательно!");
+
+  screen.innerHTML = `
+    <h2>${story.title}</h2>
+    <div class="small">${story.plot}</div>
+
+    <div class="chat" id="chat"></div>
+
+    <footer>
+      <input id="msgInput" placeholder="Напиши сообщение..."/>
+      <button onclick="send()">▶</button>
+    </footer>
+  `;
+
+  addMsg("Сюжет начался... Напиши что-нибудь.", "bot");
+}
+
+/* ===============================
+   ДОБАВИТЬ СООБЩЕНИЕ
+================================ */
+
+function addMsg(text, who="bot"){
+  const chat = document.getElementById("chat");
+
+  const msg = document.createElement("div");
+  msg.className = "msg " + who;
+
+  const avatar = document.createElement("div");
+  avatar.className="avatar";
+
+  if(who==="bot" && story.characters[0]?.avatar){
+    avatar.innerHTML=`<img src="${story.characters[0].avatar}">`;
   }
 
-  function renderCharacters() {
-    const list = document.getElementById("charList");
-    list.innerHTML = "";
+  const bubble = document.createElement("div");
+  bubble.className="bubble";
+  bubble.textContent=text;
 
-    characters.forEach((c) => {
-      const div = document.createElement("div");
-      div.className = "char";
+  msg.appendChild(avatar);
+  msg.appendChild(bubble);
 
-      const img = document.createElement("img");
-      img.className = "avatar";
-      img.src = c.avatar || "https://via.placeholder.com/50";
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+}
 
-      const span = document.createElement("span");
-      span.className = "char-name";
-      span.innerText = c.name;
+/* ===============================
+   ОТПРАВКА НА RENDER API
+================================ */
 
-      div.appendChild(img);
-      div.appendChild(span);
+async function send(){
+  const input = document.getElementById("msgInput");
+  const text = input.value.trim();
+  if(!text) return;
 
-      list.appendChild(div);
+  addMsg(text,"user");
+  input.value="";
+
+  addMsg("печатает...","bot");
+
+  try{
+    const res = await fetch("https://chat-horror-api.onrender.com/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        message: `
+Ты персонаж истории.
+Сюжет автора: ${story.plot}
+
+Игрок написал: ${text}
+Продолжай историю живым сообщением.
+        `
+      })
     });
+
+    const data = await res.json();
+
+    document.querySelector(".chat .bot:last-child").remove();
+    addMsg(data.reply,"bot");
+
+  }catch{
+    document.querySelector(".chat .bot:last-child").remove();
+    addMsg("❌ Сервер не отвечает","bot");
   }
+}
 
-  function startGame() {
-    const title = document.getElementById("title").value.trim();
-    const story = document.getElementById("story").value.trim();
+/* ===============================
+   ЗАГРУЗКА ИСТОРИИ
+================================ */
 
-    if (!title) return alert("Введите название истории!");
-    if (!story) return alert("Введите описание сюжета!");
-    if (characters.length === 0) return alert("Добавьте хотя бы одного персонажа!");
+const saved = localStorage.getItem("story");
+if(saved) story = JSON.parse(saved);
 
-    localStorage.setItem("storyTitle", title);
-    localStorage.setItem("storyText", story);
-    localStorage.setItem("characters", JSON.stringify(characters));
+renderAuthorPanel();
 
-    location.href = "play.html";
-  }
 </script>
-
 </body>
 </html>
