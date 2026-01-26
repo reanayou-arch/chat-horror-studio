@@ -1,214 +1,256 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat Story Studio</title>
 
   <style>
     body {
       margin: 0;
       font-family: Arial;
-      background: #0b1220;
+      background: linear-gradient(to bottom, #050a14, #000);
       color: white;
-      padding: 15px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
     }
 
     h1 {
       text-align: center;
+      font-size: 28px;
+      margin-bottom: 20px;
     }
 
-    .box {
-      background: rgba(255,255,255,0.08);
-      padding: 15px;
-      border-radius: 15px;
-      margin-bottom: 15px;
+    .card {
+      background: rgba(255,255,255,0.05);
+      padding: 20px;
+      border-radius: 20px;
+      margin-bottom: 20px;
     }
 
     input, textarea {
       width: 100%;
-      margin-top: 8px;
-      padding: 10px;
-      border-radius: 10px;
+      padding: 12px;
+      border-radius: 12px;
       border: none;
+      margin: 6px 0;
       font-size: 16px;
     }
 
     button {
-      margin-top: 10px;
-      padding: 10px;
-      border: none;
-      border-radius: 12px;
       width: 100%;
-      font-size: 16px;
+      padding: 14px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: bold;
       cursor: pointer;
     }
 
     .green { background: #00c853; color: white; }
-    .blue { background: #2979ff; color: white; }
-    .red { background: #ff1744; color: white; }
+    .blue  { background: #2979ff; color: white; }
+    .red   { background: #ff1744; color: white; }
 
-    .chat {
-      height: 350px;
-      overflow-y: auto;
+    .story-item {
+      padding: 12px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px;
+      margin: 10px 0;
+    }
+
+    .char {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
       background: rgba(255,255,255,0.05);
-      padding: 10px;
-      border-radius: 15px;
+      padding: 8px;
+      border-radius: 12px;
     }
 
-    .msg {
-      padding: 10px;
-      border-radius: 15px;
-      margin: 8px 0;
-      max-width: 80%;
-      word-wrap: break-word;
+    .char img {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      object-fit: cover;
     }
 
-    .user {
-      background: #2979ff;
-      margin-left: auto;
-    }
-
-    .bot {
-      background: rgba(255,255,255,0.15);
-    }
   </style>
 </head>
 
 <body>
+<div class="app">
 
-<h1>📖 Chat Story Studio</h1>
+  <h1>📖 Chat Story Studio</h1>
 
-<!-- Панель автора -->
-<div class="box">
-  <h2>Панель автора</h2>
+  <!-- ГЛАВНЫЙ ЭКРАН -->
+  <div id="home"></div>
 
-  <input id="title" placeholder="Название истории">
-  <textarea id="desc" placeholder="Описание сюжета (для ИИ)"></textarea>
+  <!-- ПАНЕЛЬ АВТОРА -->
+  <div id="editor" style="display:none;"></div>
 
-  <h3>Персонажи</h3>
-  <input id="charName" placeholder="Имя персонажа">
-  <input id="charRole" placeholder="Роль (друг, сестра...)">
-  <input id="charMood" placeholder="Характер (добрый, злой...)">
-
-  <button class="green" onclick="addCharacter()">➕ Добавить персонажа</button>
-
-  <ul id="charList"></ul>
-
-  <button class="blue" onclick="saveStory()">💾 Сохранить историю</button>
-  <button class="red" onclick="startStory()">▶ Начать историю</button>
-</div>
-
-<!-- Чат -->
-<div class="box" id="chatBox" style="display:none;">
-  <h2 id="storyName"></h2>
-
-  <div class="chat" id="chat"></div>
-
-  <input id="msgInput" placeholder="Напиши сообщение...">
-  <button class="blue" onclick="sendMessage()">Отправить</button>
 </div>
 
 <script>
-let characters = [];
-let storyText = "";
+let stories = JSON.parse(localStorage.getItem("stories") || "[]");
+let currentStory = null;
 
-function addCharacter() {
-  const name = charName.value.trim();
-  const role = charRole.value.trim();
-  const mood = charMood.value.trim();
+function saveStories() {
+  localStorage.setItem("stories", JSON.stringify(stories));
+}
 
-  if (!name) return alert("Введите имя персонажа!");
+/* ========== ГЛАВНОЕ МЕНЮ ========== */
+function renderHome() {
+  document.getElementById("editor").style.display = "none";
+  document.getElementById("home").style.display = "block";
 
-  characters.push({name, role, mood});
+  let html = `
+    <div class="card">
+      <button class="green" onclick="newStory()">➕ Создать историю</button>
+    </div>
+
+    <div class="card">
+      <h2>📚 Мои истории</h2>
+  `;
+
+  if (stories.length === 0) {
+    html += `<p>Историй пока нет.</p>`;
+  }
+
+  stories.forEach((s, i) => {
+    html += `
+      <div class="story-item">
+        <b>${s.title}</b><br>
+        <small>${s.description}</small><br><br>
+
+        <button class="red" onclick="startStory(${i})">▶ Начать</button>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+
+  document.getElementById("home").innerHTML = html;
+}
+
+/* ========== СОЗДАНИЕ ИСТОРИИ ========== */
+function newStory() {
+  currentStory = {
+    title: "",
+    description: "",
+    characters: []
+  };
+
+  renderEditor();
+}
+
+function renderEditor() {
+  document.getElementById("home").style.display = "none";
+  document.getElementById("editor").style.display = "block";
+
+  let html = `
+    <div class="card">
+      <h2>✍ Панель автора</h2>
+
+      <input id="title" placeholder="Название истории" value="${currentStory.title}">
+      <textarea id="desc" placeholder="Описание сюжета (для ИИ)">${currentStory.description}</textarea>
+
+      <h3>Персонажи</h3>
+
+      <input id="charName" placeholder="Имя персонажа">
+      <input id="charRole" placeholder="Роль (друг, сестра...)">
+      <input id="charMood" placeholder="Характер (добрый, злой...)">
+
+      <input type="file" id="charAvatar" accept="image/*">
+
+      <button class="green" onclick="addCharacter()">➕ Добавить персонажа</button>
+
+      <div id="charList"></div>
+
+      <button class="blue" onclick="saveStory()">💾 Сохранить историю</button>
+      <button onclick="renderHome()">⬅ Назад</button>
+    </div>
+  `;
+
+  document.getElementById("editor").innerHTML = html;
   renderCharacters();
+}
 
-  charName.value = "";
-  charRole.value = "";
-  charMood.value = "";
+/* ========== ПЕРСОНАЖИ ========== */
+function addCharacter() {
+  let name = document.getElementById("charName").value;
+  let role = document.getElementById("charRole").value;
+  let mood = document.getElementById("charMood").value;
+  let file = document.getElementById("charAvatar").files[0];
+
+  if (!name) return alert("Введите имя!");
+
+  if (file) {
+    let reader = new FileReader();
+    reader.onload = function() {
+      currentStory.characters.push({
+        name, role, mood,
+        avatar: reader.result
+      });
+      renderEditor();
+    };
+    reader.readAsDataURL(file);
+  } else {
+    currentStory.characters.push({
+      name, role, mood,
+      avatar: ""
+    });
+    renderEditor();
+  }
 }
 
 function renderCharacters() {
-  charList.innerHTML = "";
-  characters.forEach(c => {
-    const li = document.createElement("li");
-    li.textContent = `${c.name} — ${c.role} (${c.mood})`;
-    charList.appendChild(li);
+  let list = document.getElementById("charList");
+  if (!list) return;
+
+  list.innerHTML = "";
+
+  currentStory.characters.forEach(c => {
+    list.innerHTML += `
+      <div class="char">
+        <img src="${c.avatar || 'https://via.placeholder.com/45'}">
+        <div>
+          <b>${c.name}</b> (${c.role})<br>
+          <small>${c.mood}</small>
+        </div>
+      </div>
+    `;
   });
 }
 
+/* ========== СОХРАНЕНИЕ ========== */
 function saveStory() {
-  const title = document.getElementById("title").value.trim();
-  const desc = document.getElementById("desc").value.trim();
+  currentStory.title = document.getElementById("title").value;
+  currentStory.description = document.getElementById("desc").value;
 
-  if (!title || !desc) return alert("Заполни название и описание!");
+  if (!currentStory.title) return alert("Название обязательно!");
 
-  storyText = `
-Название: ${title}
-
-Описание: ${desc}
-
-Персонажи:
-${characters.map(c => `${c.name} — ${c.role}, характер: ${c.mood}`).join("\n")}
-`;
+  stories.push(currentStory);
+  saveStories();
 
   alert("История сохранена!");
+  renderHome();
 }
 
-function startStory() {
-  if (!storyText) return alert("Сначала сохрани историю!");
-
-  chatBox.style.display = "block";
-  storyName.textContent = title.value;
-
-  addBot("История началась... Напиши первое сообщение!");
+/* ========== ЗАПУСК ========== */
+function startStory(index) {
+  localStorage.setItem("activeStory", JSON.stringify(stories[index]));
+  window.location.href = "play.html";
 }
 
-function addUser(text) {
-  const div = document.createElement("div");
-  div.className = "msg user";
-  div.textContent = text;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function addBot(text) {
-  const div = document.createElement("div");
-  div.className = "msg bot";
-  div.textContent = text;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-async function sendMessage() {
-  const text = msgInput.value.trim();
-  if (!text) return;
-
-  addUser(text);
-  msgInput.value = "";
-
-  addBot("...печатает");
-
-  try {
-    const res = await fetch("https://chat-horror-api.onrender.com/chat", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        message: text,
-        story: storyText
-      })
-    });
-
-    const data = await res.json();
-    chat.lastChild.remove();
-
-    addBot(data.reply);
-
-  } catch {
-    chat.lastChild.remove();
-    addBot("❌ Сервер не отвечает (Render может спать)");
-  }
-}
+renderHome();
 </script>
 
 </body>
