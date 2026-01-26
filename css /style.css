@@ -1,99 +1,99 @@
 body {
   margin: 0;
-  font-family: Arial;
-  background: #050b18;
+  font-family: system-ui, sans-serif;
+  background: linear-gradient(to bottom, #050b18, #000);
   color: white;
 }
 
-.container {
+h1 {
+  text-align: center;
   padding: 20px;
 }
 
-.card {
-  background: rgba(255,255,255,0.05);
+.container {
+  max-width: 500px;
+  margin: auto;
   padding: 15px;
-  border-radius: 15px;
+}
+
+.card {
+  background: rgba(255,255,255,0.08);
+  padding: 15px;
+  border-radius: 18px;
   margin-bottom: 20px;
 }
 
 input, textarea {
   width: 100%;
+  padding: 12px;
   margin: 8px 0;
-  padding: 10px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: none;
   font-size: 16px;
 }
 
 button {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
+  margin-top: 10px;
   border: none;
-  border-radius: 12px;
+  border-radius: 14px;
   background: #2563eb;
   color: white;
   font-size: 16px;
 }
 
 .storyItem {
-  background: rgba(255,255,255,0.07);
-  padding: 10px;
-  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  padding: 12px;
+  border-radius: 14px;
   margin-top: 10px;
 }
 
-/* CHAT */
-
-.chatContainer {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
-
-.topBar {
-  padding: 10px;
-  background: rgba(255,255,255,0.05);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .chatBox {
-  flex: 1;
-  overflow-y: auto;
+  max-width: 500px;
+  margin: auto;
   padding: 15px;
+  height: 65vh;
+  overflow-y: auto;
 }
 
 .msg {
-  max-width: 75%;
-  padding: 10px;
+  padding: 12px;
   margin: 8px 0;
-  border-radius: 15px;
-  word-wrap: break-word;
+  border-radius: 16px;
+  max-width: 75%;
 }
 
-.user {
+.you {
   background: #2563eb;
   margin-left: auto;
+  text-align: right;
 }
 
-.bot {
+.npc {
   background: rgba(255,255,255,0.1);
-  margin-right: auto;
 }
 
 .inputBar {
   display: flex;
+  max-width: 500px;
+  margin: auto;
   padding: 10px;
-  background: rgba(255,255,255,0.05);
+  gap: 10px;
 }
 
 .inputBar input {
   flex: 1;
-  margin: 0;
 }
 
 .inputBar button {
   width: 60px;
-  margin-left: 5px;
+}
+
+.backBtn {
+  max-width: 500px;
+  margin: auto;
+  display: block;
+  background: rgba(255,255,255,0.1);
 }
