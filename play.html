@@ -1,29 +1,210 @@
-async function sendMessage() {
-  const input = document.getElementById("msgInput");
-  const text = input.value.trim();
-  if (!text) return;
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat Story</title>
 
-  addBubble("Вы", text, true);
-  input.value = "";
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(#050a15, #02040a);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
 
-  addBubble("...", "печатает...", false);
+    header {
+      padding: 15px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+      background: rgba(255,255,255,0.05);
+    }
 
-  try {
-    const res = await fetch("https://chat-horror-api.onrender.com/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ message: text }),
-    });
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
 
-    const data = await res.json();
+    .msgRow {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
 
-    removeTyping();
-    addBubble("Персонаж", data.reply, false);
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: gray;
+    }
 
-  } catch (e) {
-    removeTyping();
-    addBubble("Ошибка", "Сервер не отвечает 😢", false);
+    .bubble {
+      padding: 12px 15px;
+      border-radius: 18px;
+      max-width: 70%;
+      font-size: 16px;
+      line-height: 1.3;
+      word-wrap: break-word;
+    }
+
+    .bubble.other {
+      background: rgba(255,255,255,0.08);
+      align-self: flex-start;
+    }
+
+    .bubble.me {
+      background: #2563eb;
+      align-self: flex-end;
+      text-align: right;
+    }
+
+    footer {
+      display: flex;
+      padding: 10px;
+      gap: 10px;
+      background: rgba(255,255,255,0.05);
+    }
+
+    input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 15px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 15px;
+      background: #22c55e;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    button:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+
+<body>
+
+<header>Палаточный ужас — чат</header>
+
+<div id="chat"></div>
+
+<footer>
+  <input id="msgInput" placeholder="Напиши сообщение..." />
+  <button onclick="sendMessage()">➤</button>
+</footer>
+
+<script>
+  const chat = document.getElementById("chat");
+
+  // персонажи
+  const персонажи = [
+    {
+      name: "Лена",
+      avatar: "https://i.imgur.com/2WZtOD6.png"
+    },
+    {
+      name: "Дима",
+      avatar: "https://i.imgur.com/8RKXAIV.png"
+    }
+  ];
+
+  // первый старт
+  window.onload = () => {
+    addMessage("Лена", "Привет... ты уже собрал вещи?", false);
+    addMessage("Дима", "Завтра лагерь. У меня плохое предчувствие...", false);
+  };
+
+  // добавить сообщение
+  function addMessage(sender, text, isMe) {
+    const row = document.createElement("div");
+    row.className = "msgRow";
+
+    if (!isMe) {
+      const персонаж = персонажи.find(p => p.name === sender);
+
+      const img = document.createElement("img");
+      img.className = "avatar";
+      img.src = персонаж?.avatar || "";
+      row.appendChild(img);
+    }
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble " + (isMe ? "me" : "other");
+    bubble.innerText = text;
+
+    row.appendChild(bubble);
+    chat.appendChild(row);
+
+    chat.scrollTop = chat.scrollHeight;
   }
-}
+
+  // typing
+  let typingBubble = null;
+
+  function showTyping() {
+    typingBubble = document.createElement("div");
+    typingBubble.className = "bubble other";
+    typingBubble.innerText = "печатает...";
+    chat.appendChild(typingBubble);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function removeTyping() {
+    if (typingBubble) typingBubble.remove();
+    typingBubble = null;
+  }
+
+  // отправка игрока
+  async function sendMessage() {
+    const input = document.getElementById("msgInput");
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMessage("Вы", text, true);
+    input.value = "";
+
+    showTyping();
+
+    try {
+      const res = await fetch("https://chat-horror-api.onrender.com/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message: text })
+      });
+
+      const data = await res.json();
+      removeTyping();
+
+      // выбираем случайного персонажа
+      const random = персонажи[Math.floor(Math.random() * персонажи.length)];
+
+      addMessage(random.name, data.reply, false);
+
+    } catch (err) {
+      removeTyping();
+      addMessage("Ошибка", "Сервер не отвечает 😢", false);
+    }
+  }
+</script>
+
+</body>
+</html>
