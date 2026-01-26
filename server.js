@@ -17,27 +17,16 @@ app.get("/", (req, res) => {
 
 app.post("/chat", async (req, res) => {
   try {
-    const { message, story, characters } = req.body;
-
-    const systemPrompt = `
-Ты — живой персонаж из чат-истории.
-
-СЮЖЕТ:
-${story}
-
-ПЕРСОНАЖИ:
-${characters.map((c) => "- " + c.name).join("\n")}
-
-Правила:
-- Отвечай как персонаж в реальной переписке
-- Коротко, живо, по сюжету
-- Не пиши “я ИИ”
-`;
+    const { message } = req.body;
 
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: systemPrompt },
+        {
+          role: "system",
+          content:
+            "Ты персонаж хоррор-чата. Отвечай живо, коротко, как человек.",
+        },
         { role: "user", content: message },
       ],
     });
@@ -46,9 +35,12 @@ ${characters.map((c) => "- " + c.name).join("\n")}
       reply: completion.choices[0].message.content,
     });
   } catch (err) {
+    console.log("Ошибка:", err);
     res.status(500).json({ error: "Ошибка сервера" });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server started on", PORT));
+/* ✅ Render использует PORT автоматически */
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server started");
+});
