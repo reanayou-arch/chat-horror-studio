@@ -1,48 +1,50 @@
-const API_URL = "https://chat-horror-api.onrender.com/chat";
+const chatBox = document.getElementById("chatBox");
+const storyTitle = document.getElementById("storyTitle");
 
 let stories = JSON.parse(localStorage.getItem("stories") || "[]");
-let index = localStorage.getItem("playIndex");
+let activeIndex = localStorage.getItem("activeStory");
 
-if (index === null) {
+if (activeIndex === null) {
   alert("История не выбрана!");
-  location.href = "index.html";
+  window.location.href = "index.html";
 }
 
-let story = stories[index];
+let story = stories[activeIndex];
 
-document.getElementById("storyName").innerText = story.title;
-
-function save() {
-  stories[index] = story;
-  localStorage.setItem("stories", JSON.stringify(stories));
-}
+storyTitle.innerText = story.title;
 
 function renderChat() {
-  const box = document.getElementById("chatBox");
-  box.innerHTML = "";
+  chatBox.innerHTML = "";
 
   story.chat.forEach(msg => {
     const div = document.createElement("div");
-    div.className = msg.role === "user" ? "msg user" : "msg bot";
-    div.innerText = msg.text;
-    box.appendChild(div);
+
+    div.className = msg.from === "Вы" ? "msg you" : "msg npc";
+
+    div.innerHTML = `
+      <b>${msg.from}:</b><br>
+      ${msg.text}
+    `;
+
+    chatBox.appendChild(div);
   });
 
-  box.scrollTop = box.scrollHeight;
+  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 async function sendMessage() {
   const input = document.getElementById("msgInput");
   const text = input.value.trim();
+
   if (!text) return;
 
-  story.chat.push({ role: "user", text });
+  story.chat.push({ from: "Вы", text });
   input.value = "";
   renderChat();
-  save();
 
+  // Ответ бота через API
   try {
-    const res = await fetch(API_URL, {
+    const res = await fetch("https://chat-horror-api.onrender.com/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: text })
@@ -50,17 +52,20 @@ async function sendMessage() {
 
     const data = await res.json();
 
-    story.chat.push({ role: "bot", text: data.reply });
-    renderChat();
-    save();
-  } catch {
-    story.chat.push({ role: "bot", text: "❌ Сервер не отвечает" });
-    renderChat();
+    story.chat.push({ from: "Лена", text: data.reply });
+
+  } catch (err) {
+    story.chat.push({ from: "Ошибка", text: "Сервер не отвечает 😢" });
   }
+
+  stories[activeIndex] = story;
+  localStorage.setItem("stories", JSON.stringify(stories));
+
+  renderChat();
 }
 
 function goBack() {
-  location.href = "index.html";
+  window.location.href = "index.html";
 }
 
 renderChat();
