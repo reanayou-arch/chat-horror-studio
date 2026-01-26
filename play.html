@@ -1,167 +1,183 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Chat Horror</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Палаточный ужас — чат</title>
 
   <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
     body {
       margin: 0;
-      font-family: Arial;
-      background: #071021;
-      color: white;
+      background: linear-gradient(180deg, #05070c, #0a1020);
+      color: #fff;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      height: 100vh;
     }
 
     header {
-      padding: 15px;
-      font-size: 20px;
-      font-weight: bold;
+      padding: 16px;
       text-align: center;
-      background: rgba(255,255,255,0.05);
+      font-size: 20px;
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
     }
 
     #chat {
       flex: 1;
       overflow-y: auto;
-      padding: 15px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
-    .msg {
+    .message {
       display: flex;
-      margin-bottom: 12px;
       align-items: flex-end;
+      max-width: 85%;
       gap: 8px;
     }
 
+    .bot {
+      align-self: flex-start;
+    }
+
+    .user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
     .avatar {
-      width: 38px;
-      height: 38px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
-      object-fit: cover;
-      background: gray;
+      background: #333;
+      flex-shrink: 0;
     }
 
     .bubble {
-      max-width: 75%;
       padding: 10px 14px;
       border-radius: 16px;
-      background: rgba(255,255,255,0.08);
-      font-size: 16px;
+      line-height: 1.35;
       word-wrap: break-word;
+      white-space: pre-wrap;
+      max-width: 100%;
     }
 
-    .me {
-      justify-content: flex-end;
+    .bot .bubble {
+      background: rgba(255,255,255,0.08);
+      border-bottom-left-radius: 6px;
     }
 
-    .me .bubble {
+    .user .bubble {
       background: #2563eb;
+      border-bottom-right-radius: 6px;
     }
 
     footer {
-      display: flex;
       padding: 10px;
-      background: rgba(255,255,255,0.05);
+      display: flex;
+      gap: 8px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      background: #05070c;
     }
 
     input {
       flex: 1;
       padding: 12px;
-      border-radius: 14px;
+      border-radius: 12px;
       border: none;
       outline: none;
-      font-size: 16px;
+      font-size: 15px;
     }
 
     button {
-      margin-left: 8px;
-      padding: 12px 18px;
-      border: none;
-      border-radius: 14px;
       background: #22c55e;
-      color: white;
-      font-size: 18px;
+      border: none;
+      color: #000;
+      font-weight: 600;
+      padding: 0 16px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .system {
+      align-self: center;
+      font-size: 13px;
+      opacity: 0.6;
     }
   </style>
 </head>
-
 <body>
 
-<header id="title"></header>
+<header>Палаточный ужас — чат</header>
 
 <div id="chat"></div>
 
 <footer>
-  <input id="text" placeholder="Напиши сообщение...">
-  <button onclick="send()">➤</button>
+  <input id="input" placeholder="Напиши сообщение..." />
+  <button onclick="send()">▶</button>
 </footer>
 
 <script>
-  const API_URL = "https://chat-horror-api.onrender.com/chat";
-
-  const title = localStorage.getItem("storyTitle");
-  const storyText = localStorage.getItem("storyText");
-  const characters = JSON.parse(localStorage.getItem("characters"));
-
-  document.getElementById("title").innerText = title;
-
   const chat = document.getElementById("chat");
+  const input = document.getElementById("input");
 
-  function addMessage(text, fromMe=false, avatar="") {
-    const div = document.createElement("div");
-    div.className = "msg" + (fromMe ? " me" : "");
+  function addMessage(text, who = "bot") {
+    const msg = document.createElement("div");
+    msg.className = "message " + who;
 
-    if (!fromMe) {
-      const img = document.createElement("img");
-      img.className = "avatar";
-      img.src = avatar || "https://via.placeholder.com/50";
-      div.appendChild(img);
-    }
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
 
     const bubble = document.createElement("div");
     bubble.className = "bubble";
-    bubble.innerText = text;
+    bubble.textContent = text;
 
-    div.appendChild(bubble);
-    chat.appendChild(div);
+    msg.appendChild(avatar);
+    msg.appendChild(bubble);
+    chat.appendChild(msg);
 
     chat.scrollTop = chat.scrollHeight;
   }
 
-  async function send() {
-    const input = document.getElementById("text");
-    const message = input.value.trim();
-    if (!message) return;
+  // старт сюжета
+  addMessage("Привет... ты уже собрал вещи?");
+  addMessage("Завтра лагерь. У меня плохое предчувствие...");
 
-    addMessage(message, true);
+  async function send() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMessage(text, "user");
     input.value = "";
 
-    addMessage("печатает...", false, characters[0].avatar);
+    addMessage("печатает...", "system");
 
     try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          story: storyText,
-          characters
-        })
-      });
+      const res = await fetch(
+        "https://chat-horror-api.onrender.com/chat",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text }),
+        }
+      );
+
+      chat.lastChild.remove();
 
       const data = await res.json();
+      addMessage(data.reply || "…");
 
+    } catch (e) {
       chat.lastChild.remove();
-
-      addMessage(data.reply, false, characters[0].avatar);
-
-    } catch {
-      chat.lastChild.remove();
-      addMessage("❌ Сервер не отвечает", false);
+      addMessage("Сервер не отвечает 😢");
     }
   }
 </script>
