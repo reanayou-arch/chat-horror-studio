@@ -6,56 +6,102 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Проверка что сервер жив
-app.get("/", (req, res) => {
-  res.send("Chat Horror API работает!");
+/* =========================
+   OpenAI Client
+========================= */
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-// POST чат
+/* =========================
+   Главная проверка сервера
+========================= */
+app.get("/", (req, res) => {
+  res.send("✅ Chat Horror API работает!");
+});
+
+/* =========================
+   Чтобы браузер не писал Cannot GET /chat
+========================= */
+app.get("/chat", (req, res) => {
+  res.send("❗ Используй POST запрос, а не GET.");
+});
+
+/* =========================
+   Главный чат-эндпоинт
+========================= */
 app.post("/chat", async (req, res) => {
   try {
-    const { message, story } = req.body;
+    const { message, story, characters } = req.body;
 
     if (!message) {
-      return res.json({ reply: "Ошибка: пустое сообщение." });
+      return res.json({ reply: "Сообщение пустое..." });
     }
 
-    const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    /* =========================
+       Формируем персонажей
+    ========================= */
+    let charText = "";
 
+    if (characters && characters.length > 0) {
+      charText = characters
+        .map(
+          (c) =>
+            `- ${c.name} (${c.role}), характер: ${c.traits}`
+        )
+        .join("\n");
+    } else {
+      charText = "Персонажи не заданы.";
+    }
+
+    /* =========================
+       Главный промпт
+    ========================= */
+    const systemPrompt = `
+Ты — чат-бот внутри интерактивной истории.
+
+История:
+${story}
+
+Персонажи:
+${charText}
+
+Правила:
+- Пиши как живой человек в переписке (Telegram стиль)
+- Отвечай от имени персонажей
+- Развивай сюжет постепенно
+- Реагируй на действия игрока
+- Не пиши как робот
+- Не придумывай новые жанры, держись истории
+`;
+
+    /* =========================
+       Запрос к OpenAI
+    ========================= */
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        {
-          role: "system",
-          content: `
-Ты персонаж интерактивной чат-истории.
-Ты отвечаешь как живой человек в сюжете.
-Сюжет истории:
-
-${story}
-
-Не делай выборы вместо игрока.
-Игрок сам пишет действия.
-`,
-        },
-        {
-          role: "user",
-          content: message,
-        },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: message },
       ],
     });
 
+    const reply = completion.choices[0].message.content;
+
+    res.json({ reply });
+
+  } catch (error) {
+    console.error("Ошибка:", error);
     res.json({
-      reply: completion.choices[0].message.content,
-    });
-  } catch (err) {
-    console.error(err);
-    res.json({
-      reply: "Ошибка сервера. Проверь API ключ или Render.",
+      reply: "❌ Ошибка сервера. Проверь Render и ключ API.",
     });
   }
 });
 
-app.listen(3000, () => console.log("Server started"));
+/* =========================
+   Render порт
+========================= */
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () =>
+  console.log("✅ Server started on port", PORT)
+);
