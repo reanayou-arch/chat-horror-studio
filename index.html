@@ -6,291 +6,336 @@
 <title>Chat Story Studio</title>
 
 <style>
-body{margin:0;font-family:system-ui;background:#0b1220;color:#fff}
-.app{max-width:420px;margin:auto;height:100vh;display:flex;flex-direction:column}
-.header{padding:16px;font-size:20px;font-weight:700;background:#020617}
-.screen{flex:1;padding:16px;overflow-y:auto}
-
-.card{background:#111827;padding:14px;border-radius:14px;margin-bottom:12px}
-input,select,textarea{
-  width:100%;padding:10px;border-radius:12px;border:none;margin-top:6px;
-  background:#1f2937;color:white
+body{
+  margin:0;
+  font-family:system-ui;
+  background:radial-gradient(circle at top,#0f172a,#020617);
+  color:white;
 }
+
+header{
+  padding:20px;
+  font-size:28px;
+  font-weight:800;
+  background:rgba(0,0,0,0.4);
+  border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+.container{
+  max-width:420px;
+  margin:auto;
+  padding:15px;
+}
+
+.card{
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:18px;
+  padding:15px;
+  margin-top:15px;
+}
+
 button{
-  margin-top:10px;width:100%;padding:12px;border:none;border-radius:14px;
-  background:#2563eb;color:white;font-size:15px
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:14px;
+  margin-top:10px;
+  font-size:16px;
+  font-weight:700;
+  background:#2563eb;
+  color:white;
+  cursor:pointer;
 }
 
-.chat{display:flex;flex-direction:column;gap:12px}
-.message{display:flex;gap:8px;align-items:flex-end}
+button:hover{opacity:0.9;}
+
+input,textarea,select{
+  width:100%;
+  padding:12px;
+  margin-top:8px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.1);
+  background:rgba(0,0,0,0.3);
+  color:white;
+  font-size:15px;
+}
+
+textarea{min-height:80px;}
+
+.chatBox{
+  margin-top:20px;
+  padding:10px;
+  background:rgba(255,255,255,0.03);
+  border-radius:16px;
+}
+
+.msg{
+  display:flex;
+  gap:10px;
+  margin:10px 0;
+}
 
 .avatar{
-  width:40px;
-  height:40px;
+  width:45px;
+  height:45px;
   border-radius:50%;
   object-fit:cover;
 }
 
-.bubble{background:#1f2937;padding:10px 14px;border-radius:16px;max-width:75%}
-.name{font-size:12px;opacity:.7;margin-bottom:4px}
-.player{justify-content:flex-end}
-.player .bubble{background:#22c55e}
-.system{justify-content:center}
-.system .bubble{background:#444}
+.bubble{
+  background:rgba(255,255,255,0.08);
+  padding:10px 14px;
+  border-radius:16px;
+  max-width:70%;
+}
 
-.choiceBox{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.you .bubble{
+  background:#22c55e;
+  margin-left:auto;
+}
+
+.choiceBox{
+  margin-top:15px;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid rgba(255,0,0,0.4);
+}
+
 .choiceBtn{
   background:#2563eb;
-  border:none;
-  padding:10px;
-  border-radius:12px;
-  color:white;
-  font-size:14px;
 }
 </style>
 </head>
 
 <body>
-<div class="app">
-  <div class="header">Chat Story Studio</div>
-  <div class="screen" id="screen"></div>
+
+<header>Chat Story Studio</header>
+
+<div class="container">
+
+  <!-- Истории -->
+  <div class="card">
+    <h2>📚 Истории</h2>
+    <button onclick="newStory()">➕ Новая история</button>
+    <div id="storiesList"></div>
+  </div>
+
+  <!-- Редактор -->
+  <div class="card" id="editor" style="display:none;">
+    <h2>✍ Редактор истории</h2>
+
+    <input id="storyTitle" placeholder="Название истории">
+
+    <select id="storyGenre">
+      <option>Хоррор</option>
+      <option>Мистика</option>
+      <option>Триллер</option>
+      <option>Драма</option>
+    </select>
+
+    <h3>👥 Персонажи</h3>
+    <input id="charName" placeholder="Имя персонажа">
+    <input id="charImg" type="file" accept="image/*">
+    <button onclick="addCharacter()">Добавить персонажа</button>
+    <div id="charList"></div>
+
+    <h3>💬 Реплики и выборы</h3>
+
+    <select id="speakerSelect"></select>
+    <textarea id="msgText" placeholder="Текст сообщения..."></textarea>
+
+    <button onclick="addLine()">Добавить реплику</button>
+    <button onclick="addEvent()">Добавить событие</button>
+    <button onclick="addChoice()">Добавить выбор с веткой</button>
+
+    <div id="storyPreview" class="chatBox"></div>
+
+    <button onclick="saveStory()">💾 Сохранить историю</button>
+    <button onclick="backHome()">⬅ Назад</button>
+  </div>
+
 </div>
 
 <script>
-let characters=[];
-let story=[];
+let stories = JSON.parse(localStorage.getItem("stories")||"[]");
+let currentStory=null;
 
-/* ========== РЕДАКТОР ========== */
-function showEditor(){
-  screen.innerHTML=`
-
-    <div class="card">
-      <h3>👥 Персонажи</h3>
-
-      <input id="charName" placeholder="Имя персонажа">
-
-      <input type="file" id="charAvatar" accept="image/*">
-
-      <button onclick="addCharacter()">Добавить персонажа</button>
-
-      <div id="charList"></div>
-    </div>
-
-    <div class="card">
-      <h3>✍️ Реплики и выборы</h3>
-
-      <select id="lineFrom"></select>
-      <textarea id="lineText" placeholder="Текст сообщения..."></textarea>
-
-      <button onclick="addLine()">Добавить реплику</button>
-      <button onclick="addSystemLine()">Добавить событие</button>
-      <button onclick="addChoice()">Добавить выбор с веткой</button>
-
-      <div id="storyList"></div>
-    </div>
-
-    <button onclick="startGame()">▶ Играть</button>
-  `;
-
-  updateSelectors();
-  renderCharacters();
-  renderStory();
+function renderStories(){
+  const box=document.getElementById("storiesList");
+  box.innerHTML="";
+  stories.forEach((s,i)=>{
+    const div=document.createElement("div");
+    div.className="card";
+    div.innerHTML=`
+      <b>${s.title}</b><br>
+      ${s.genre} • ${s.characters.length} персонажей<br>
+      <button onclick="editStory(${i})">✏ Редактировать</button>
+    `;
+    box.appendChild(div);
+  });
 }
 
-/* ========== ДОБАВИТЬ ПЕРСОНАЖА С АВАТАРКОЙ ========== */
+function newStory(){
+  currentStory={
+    title:"",
+    genre:"Хоррор",
+    characters:[],
+    steps:[]
+  };
+  openEditor();
+}
+
+function editStory(i){
+  currentStory=stories[i];
+  openEditor();
+}
+
+function openEditor(){
+  document.getElementById("editor").style.display="block";
+  document.getElementById("storyTitle").value=currentStory.title;
+  document.getElementById("storyGenre").value=currentStory.genre;
+  renderCharacters();
+  renderPreview();
+}
+
+function backHome(){
+  document.getElementById("editor").style.display="none";
+  renderStories();
+}
+
 function addCharacter(){
   const name=document.getElementById("charName").value.trim();
-  const file=document.getElementById("charAvatar").files[0];
-
-  if(!name) return alert("Введите имя");
-  if(!file) return alert("Загрузите аватарку");
+  const file=document.getElementById("charImg").files[0];
+  if(!name||!file) return alert("Введите имя и выберите фото!");
 
   const reader=new FileReader();
-
-  reader.onload=function(){
-    characters.push({
-      id:"c"+Date.now(),
-      name:name,
+  reader.onload=()=>{
+    currentStory.characters.push({
+      name,
       avatar:reader.result
     });
-
-    document.getElementById("charName").value="";
-    document.getElementById("charAvatar").value="";
-
-    updateSelectors();
     renderCharacters();
   };
-
   reader.readAsDataURL(file);
 }
 
-/* ========== СПИСОК ПЕРСОНАЖЕЙ ========== */
 function renderCharacters(){
-  charList.innerHTML=characters.map(c=>`
-    <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
-      <img src="${c.avatar}" class="avatar">
-      <b>${c.name}</b>
-    </div>
-  `).join("");
+  const list=document.getElementById("charList");
+  const select=document.getElementById("speakerSelect");
+  list.innerHTML="";
+  select.innerHTML="";
+
+  currentStory.characters.forEach(c=>{
+    list.innerHTML+=`<div>• ${c.name}</div>`;
+    select.innerHTML+=`<option>${c.name}</option>`;
+  });
 }
 
-function updateSelectors(){
-  lineFrom.innerHTML=characters.map(c=>`
-    <option value="${c.id}">${c.name}</option>
-  `).join("");
-}
-
-/* ========== СЮЖЕТ ========== */
 function addLine(){
-  const from=lineFrom.value;
-  const text=lineText.value.trim();
-  if(!text) return alert("Введите текст");
-
-  story.push({type:"line",from,text});
-  lineText.value="";
-  renderStory();
-}
-
-function addSystemLine(){
-  const text=prompt("Системное событие:");
+  const from=document.getElementById("speakerSelect").value;
+  const text=document.getElementById("msgText").value.trim();
   if(!text) return;
-  story.push({type:"system",text});
-  renderStory();
+
+  currentStory.steps.push({type:"line",from,text});
+  document.getElementById("msgText").value="";
+  renderPreview();
 }
 
-/* === ВЕТВЛЕНИЕ === */
+function addEvent(){
+  const text=prompt("Событие:");
+  if(!text) return;
+  currentStory.steps.push({type:"event",text});
+  renderPreview();
+}
+
 function addChoice(){
-  const q=prompt("Вопрос выбора:");
-  if(!q) return;
+  const question=prompt("Вопрос выбора:");
+  const a=prompt("Вариант 1:");
+  const b=prompt("Вариант 2:");
+  if(!question||!a||!b) return;
 
-  const opt1=prompt("Вариант 1:");
-  const jump1=parseInt(prompt("Перейти на шаг если 1?"));
-
-  const opt2=prompt("Вариант 2:");
-  const jump2=parseInt(prompt("Перейти на шаг если 2?"));
-
-  story.push({
+  currentStory.steps.push({
     type:"choice",
-    question:q,
+    question,
     options:[
-      {text:opt1, jump:jump1-1},
-      {text:opt2, jump:jump2-1}
+      {text:a,branch:[]},
+      {text:b,branch:[]}
     ]
   });
-
-  renderStory();
+  renderPreview();
 }
 
-function renderStory(){
-  storyList.innerHTML=story.map((s,i)=>{
+function addBranchLine(choiceIndex,optIndex){
+  const from=prompt("Кто говорит?");
+  const text=prompt("Сообщение ветки:");
+  if(!from||!text) return;
+
+  currentStory.steps[choiceIndex]
+    .options[optIndex]
+    .branch.push({from,text});
+
+  renderPreview();
+}
+
+function renderPreview(){
+  const box=document.getElementById("storyPreview");
+  box.innerHTML="";
+
+  currentStory.steps.forEach((s,i)=>{
     if(s.type==="line"){
-      return `<div>${i+1}. <b>${getChar(s.from).name}:</b> ${s.text}</div>`;
+      box.innerHTML+=`
+        <div class="msg">
+          <div class="bubble">
+            <b>${s.from}:</b> ${s.text}
+          </div>
+        </div>
+      `;
     }
-    if(s.type==="system"){
-      return `<div>${i+1}. ⚡ <i>${s.text}</i></div>`;
+
+    if(s.type==="event"){
+      box.innerHTML+=`
+        <div class="msg">
+          <div class="bubble" style="background:rgba(255,255,255,0.15)">
+            ⚡ ${s.text}
+          </div>
+        </div>
+      `;
     }
+
     if(s.type==="choice"){
-      return `<div>${i+1}. ❓ <b>Выбор:</b> ${s.question}</div>`;
+      box.innerHTML+=`
+        <div class="choiceBox">
+          ❓ <b>${s.question}</b><br><br>
+
+          1) ${s.options[0].text}
+          <button onclick="addBranchLine(${i},0)">➕ Реплика ветки</button>
+          (${s.options[0].branch.length})
+
+          <br><br>
+
+          2) ${s.options[1].text}
+          <button onclick="addBranchLine(${i},1)">➕ Реплика ветки</button>
+          (${s.options[1].branch.length})
+        </div>
+      `;
     }
-  }).join("");
-}
-
-/* ========== ИГРА ========== */
-let step=0;
-
-function startGame(){
-  if(story.length<1) return alert("Добавь сюжет");
-
-  step=0;
-  screen.innerHTML=`
-    <button onclick="showEditor()">← Назад</button>
-    <div class="chat" id="chat"></div>
-  `;
-
-  nextStory();
-}
-
-function nextStory(){
-  if(step>=story.length) return;
-
-  const part=story[step];
-  step++;
-
-  setTimeout(()=>{
-    if(part.type==="line"){
-      const c=getChar(part.from);
-      addMessage(c.name,part.text,c.avatar);
-      nextStory();
-    }
-
-    if(part.type==="system"){
-      addSystem(part.text);
-      nextStory();
-    }
-
-    if(part.type==="choice"){
-      showChoice(part);
-    }
-
-  },1000);
-}
-
-/* === ВЫБОР === */
-function showChoice(choice){
-  const box=document.createElement("div");
-  box.className="choiceBox";
-
-  const q=document.createElement("div");
-  q.innerHTML=`❓ <b>${choice.question}</b>`;
-  box.appendChild(q);
-
-  choice.options.forEach(opt=>{
-    const btn=document.createElement("button");
-    btn.className="choiceBtn";
-    btn.innerText=opt.text;
-
-    btn.onclick=()=>{
-      addMessage("Вы",opt.text,null,true);
-      box.remove();
-      step=opt.jump;
-      nextStory();
-    };
-
-    box.appendChild(btn);
   });
-
-  chat.appendChild(box);
 }
 
-/* ========== ЧАТ UI ========== */
-function addMessage(name,text,avatar,isPlayer=false){
-  chat.innerHTML+=`
-    <div class="message ${isPlayer?"player":""}">
-      ${isPlayer?"":`<img src="${avatar}" class="avatar">`}
-      <div class="bubble">
-        <div class="name">${name}</div>
-        ${text}
-      </div>
-    </div>
-  `;
-  chat.scrollTop=99999;
+function saveStory(){
+  currentStory.title=document.getElementById("storyTitle").value;
+  currentStory.genre=document.getElementById("storyGenre").value;
+
+  const index=stories.findIndex(s=>s===currentStory);
+  if(index===-1) stories.push(currentStory);
+
+  localStorage.setItem("stories",JSON.stringify(stories));
+  alert("История сохранена!");
+  renderStories();
 }
 
-function addSystem(text){
-  chat.innerHTML+=`
-    <div class="message system">
-      <div class="bubble">${text}</div>
-    </div>
-  `;
-}
-
-/* ========== ВСПОМОГАТЕЛЬНОЕ ========== */
-function getChar(id){
-  return characters.find(c=>c.id===id);
-}
-
-const screen=document.getElementById("screen");
-showEditor();
+renderStories();
 </script>
 
 </body>
