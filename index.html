@@ -22,20 +22,31 @@ button{
 }
 
 .chat{display:flex;flex-direction:column;gap:12px}
-.message{display:flex;gap:8px}
+.message{display:flex;gap:8px;align-items:flex-end}
+
 .avatar{
-  width:36px;height:36px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;font-weight:700
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  object-fit:cover;
 }
+
 .bubble{background:#1f2937;padding:10px 14px;border-radius:16px;max-width:75%}
 .name{font-size:12px;opacity:.7;margin-bottom:4px}
 .player{justify-content:flex-end}
 .player .bubble{background:#22c55e}
 .system{justify-content:center}
 .system .bubble{background:#444}
-.inputRow{display:flex;gap:6px;margin-top:10px}
-.inputRow input{flex:1}
-.inputRow button{width:auto}
+
+.choiceBox{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.choiceBtn{
+  background:#2563eb;
+  border:none;
+  padding:10px;
+  border-radius:12px;
+  color:white;
+  font-size:14px;
+}
 </style>
 </head>
 
@@ -49,26 +60,31 @@ button{
 let characters=[];
 let story=[];
 
-/* ========== ЭКРАН РЕДАКТОРА ========== */
+/* ========== РЕДАКТОР ========== */
 function showEditor(){
   screen.innerHTML=`
 
     <div class="card">
       <h3>👥 Персонажи</h3>
+
       <input id="charName" placeholder="Имя персонажа">
+
+      <input type="file" id="charAvatar" accept="image/*">
+
       <button onclick="addCharacter()">Добавить персонажа</button>
+
       <div id="charList"></div>
     </div>
 
     <div class="card">
-      <h3>✍️ Сюжет (реплики)</h3>
+      <h3>✍️ Реплики и выборы</h3>
 
       <select id="lineFrom"></select>
       <textarea id="lineText" placeholder="Текст сообщения..."></textarea>
 
       <button onclick="addLine()">Добавить реплику</button>
-
-      <button onclick="addSystemLine()">Добавить системное событие</button>
+      <button onclick="addSystemLine()">Добавить событие</button>
+      <button onclick="addChoice()">Добавить выбор с веткой</button>
 
       <div id="storyList"></div>
     </div>
@@ -81,98 +97,115 @@ function showEditor(){
   renderStory();
 }
 
-/* ========== ПЕРСОНАЖИ ========== */
+/* ========== ДОБАВИТЬ ПЕРСОНАЖА С АВАТАРКОЙ ========== */
 function addCharacter(){
   const name=document.getElementById("charName").value.trim();
+  const file=document.getElementById("charAvatar").files[0];
+
   if(!name) return alert("Введите имя");
+  if(!file) return alert("Загрузите аватарку");
 
-  characters.push({
-    id:"c"+Date.now(),
-    name:name,
-    color:randomColor()
-  });
+  const reader=new FileReader();
 
-  document.getElementById("charName").value="";
-  updateSelectors();
-  renderCharacters();
+  reader.onload=function(){
+    characters.push({
+      id:"c"+Date.now(),
+      name:name,
+      avatar:reader.result
+    });
+
+    document.getElementById("charName").value="";
+    document.getElementById("charAvatar").value="";
+
+    updateSelectors();
+    renderCharacters();
+  };
+
+  reader.readAsDataURL(file);
 }
 
+/* ========== СПИСОК ПЕРСОНАЖЕЙ ========== */
 function renderCharacters(){
-  const list=document.getElementById("charList");
-  list.innerHTML=characters.map(c=>`
-    <div style="margin-top:6px">
+  charList.innerHTML=characters.map(c=>`
+    <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
+      <img src="${c.avatar}" class="avatar">
       <b>${c.name}</b>
     </div>
   `).join("");
 }
 
 function updateSelectors(){
-  const sel=document.getElementById("lineFrom");
-  if(!sel) return;
-
-  sel.innerHTML=characters.map(c=>`
+  lineFrom.innerHTML=characters.map(c=>`
     <option value="${c.id}">${c.name}</option>
   `).join("");
 }
 
 /* ========== СЮЖЕТ ========== */
 function addLine(){
-  const from=document.getElementById("lineFrom").value;
-  const text=document.getElementById("lineText").value.trim();
+  const from=lineFrom.value;
+  const text=lineText.value.trim();
   if(!text) return alert("Введите текст");
 
-  story.push({from,text});
-  document.getElementById("lineText").value="";
+  story.push({type:"line",from,text});
+  lineText.value="";
   renderStory();
 }
 
 function addSystemLine(){
-  const text=prompt("Введите системное событие:");
+  const text=prompt("Системное событие:");
   if(!text) return;
-  story.push({system:text});
+  story.push({type:"system",text});
+  renderStory();
+}
+
+/* === ВЕТВЛЕНИЕ === */
+function addChoice(){
+  const q=prompt("Вопрос выбора:");
+  if(!q) return;
+
+  const opt1=prompt("Вариант 1:");
+  const jump1=parseInt(prompt("Перейти на шаг если 1?"));
+
+  const opt2=prompt("Вариант 2:");
+  const jump2=parseInt(prompt("Перейти на шаг если 2?"));
+
+  story.push({
+    type:"choice",
+    question:q,
+    options:[
+      {text:opt1, jump:jump1-1},
+      {text:opt2, jump:jump2-1}
+    ]
+  });
+
   renderStory();
 }
 
 function renderStory(){
-  const list=document.getElementById("storyList");
-  list.innerHTML=story.map((s,i)=>`
-    <div style="margin-top:6px">
-      ${s.system
-        ? `<i>⚡ ${s.system}</i>`
-        : `<b>${getChar(s.from).name}:</b> ${s.text}`
-      }
-    </div>
-  `).join("");
+  storyList.innerHTML=story.map((s,i)=>{
+    if(s.type==="line"){
+      return `<div>${i+1}. <b>${getChar(s.from).name}:</b> ${s.text}</div>`;
+    }
+    if(s.type==="system"){
+      return `<div>${i+1}. ⚡ <i>${s.text}</i></div>`;
+    }
+    if(s.type==="choice"){
+      return `<div>${i+1}. ❓ <b>Выбор:</b> ${s.question}</div>`;
+    }
+  }).join("");
 }
 
 /* ========== ИГРА ========== */
 let step=0;
 
 function startGame(){
-  if(characters.length<1) return alert("Добавь персонажей");
-  if(story.length<1) return alert("Добавь реплики");
+  if(story.length<1) return alert("Добавь сюжет");
 
   step=0;
   screen.innerHTML=`
     <button onclick="showEditor()">← Назад</button>
     <div class="chat" id="chat"></div>
-
-    <div class="inputRow">
-      <input id="msg" placeholder="Напиши сообщение...">
-      <button onclick="send()">▶</button>
-    </div>
   `;
-
-  nextStory();
-}
-
-function send(){
-  const input=document.getElementById("msg");
-  const text=input.value.trim();
-  if(!text) return;
-  input.value="";
-
-  addMessage("Вы",text,"",true);
 
   nextStory();
 }
@@ -184,20 +217,56 @@ function nextStory(){
   step++;
 
   setTimeout(()=>{
-    if(part.system){
-      addSystem(part.system);
-    } else {
+    if(part.type==="line"){
       const c=getChar(part.from);
-      addMessage(c.name,part.text,c.color);
+      addMessage(c.name,part.text,c.avatar);
+      nextStory();
     }
-  },1200);
+
+    if(part.type==="system"){
+      addSystem(part.text);
+      nextStory();
+    }
+
+    if(part.type==="choice"){
+      showChoice(part);
+    }
+
+  },1000);
+}
+
+/* === ВЫБОР === */
+function showChoice(choice){
+  const box=document.createElement("div");
+  box.className="choiceBox";
+
+  const q=document.createElement("div");
+  q.innerHTML=`❓ <b>${choice.question}</b>`;
+  box.appendChild(q);
+
+  choice.options.forEach(opt=>{
+    const btn=document.createElement("button");
+    btn.className="choiceBtn";
+    btn.innerText=opt.text;
+
+    btn.onclick=()=>{
+      addMessage("Вы",opt.text,null,true);
+      box.remove();
+      step=opt.jump;
+      nextStory();
+    };
+
+    box.appendChild(btn);
+  });
+
+  chat.appendChild(box);
 }
 
 /* ========== ЧАТ UI ========== */
-function addMessage(name,text,color,isPlayer=false){
+function addMessage(name,text,avatar,isPlayer=false){
   chat.innerHTML+=`
     <div class="message ${isPlayer?"player":""}">
-      ${isPlayer?"":`<div class="avatar" style="background:${color}">${name[0]}</div>`}
+      ${isPlayer?"":`<img src="${avatar}" class="avatar">`}
       <div class="bubble">
         <div class="name">${name}</div>
         ${text}
@@ -213,17 +282,11 @@ function addSystem(text){
       <div class="bubble">${text}</div>
     </div>
   `;
-  chat.scrollTop=99999;
 }
 
 /* ========== ВСПОМОГАТЕЛЬНОЕ ========== */
 function getChar(id){
   return characters.find(c=>c.id===id);
-}
-
-function randomColor(){
-  const c=["#e11d48","#2563eb","#22c55e","#a855f7","#eab308"];
-  return c[Math.floor(Math.random()*c.length)];
 }
 
 const screen=document.getElementById("screen");
