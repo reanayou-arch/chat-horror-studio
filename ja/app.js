@@ -2,33 +2,13 @@ const storiesList = document.getElementById("storiesList");
 
 let stories = JSON.parse(localStorage.getItem("stories") || "[]");
 
+// ===== СОХРАНЕНИЕ =====
 function saveStories() {
   localStorage.setItem("stories", JSON.stringify(stories));
 }
 
-function renderStories() {
-  storiesList.innerHTML = "";
-
-  if (stories.length === 0) {
-    storiesList.innerHTML = "<p>Историй пока нет...</p>";
-    return;
-  }
-
-  stories.forEach((story, index) => {
-    const div = document.createElement("div");
-    div.className = "storyItem";
-
-    div.innerHTML = `
-      <h3>${story.title}</h3>
-      <p>${story.desc}</p>
-      <button onclick="startStory(${index})">▶ Начать чат</button>
-    `;
-
-    storiesList.appendChild(div);
-  });
-}
-
-function createStory() {
+// ===== СОЗДАТЬ ИСТОРИЮ =====
+window.createStory = function () {
   const title = document.getElementById("titleInput").value.trim();
   const desc = document.getElementById("descInput").value.trim();
 
@@ -40,9 +20,8 @@ function createStory() {
   stories.push({
     title,
     desc,
-    chat: [
-      { from: "Лена", text: "Привет... ты готов к лагерю?" }
-    ]
+    characters: [],
+    messages: []
   });
 
   saveStories();
@@ -50,11 +29,43 @@ function createStory() {
 
   document.getElementById("titleInput").value = "";
   document.getElementById("descInput").value = "";
+};
+
+// ===== РЕНДЕР СПИСКА =====
+function renderStories() {
+  storiesList.innerHTML = "";
+
+  if (stories.length === 0) {
+    storiesList.innerHTML = "<p>Историй пока нет</p>";
+    return;
+  }
+
+  stories.forEach((story, index) => {
+    const div = document.createElement("div");
+    div.className = "storyItem";
+
+    div.innerHTML = `
+      <h3>${story.title}</h3>
+      <p>${story.desc || "Без описания"}</p>
+
+      <button onclick="openEditor(${index})">✍ Редактировать</button>
+      <button onclick="startStory(${index})">▶ Начать чат</button>
+    `;
+
+    storiesList.appendChild(div);
+  });
 }
 
-function startStory(index) {
-  localStorage.setItem("activeStory", index);
-  window.location.href = "play.html";
-}
+// ===== ОТКРЫТЬ РЕДАКТОР =====
+window.openEditor = function (index) {
+  localStorage.setItem("editIndex", index);
+  location.href = "editor.html";
+};
+
+// ===== НАЧАТЬ ИГРУ =====
+window.startStory = function (index) {
+  localStorage.setItem("playIndex", index);
+  location.href = "play.html";
+};
 
 renderStories();
