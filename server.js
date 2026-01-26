@@ -3,6 +3,7 @@ import cors from "cors";
 import OpenAI from "openai";
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
@@ -19,15 +20,18 @@ app.post("/chat", async (req, res) => {
     const { message, story, characters } = req.body;
 
     const systemPrompt = `
-Ты персонаж хоррор-чат истории.
+Ты — живой персонаж из чат-истории.
 
-История: ${story}
+СЮЖЕТ:
+${story}
 
-Персонажи:
+ПЕРСОНАЖИ:
 ${characters.map((c) => "- " + c.name).join("\n")}
 
-Отвечай живо, как человек, короткими сообщениями.
-Продолжай сюжет.
+Правила:
+- Отвечай как персонаж в реальной переписке
+- Коротко, живо, по сюжету
+- Не пиши “я ИИ”
 `;
 
     const completion = await client.chat.completions.create({
@@ -42,10 +46,9 @@ ${characters.map((c) => "- " + c.name).join("\n")}
       reply: completion.choices[0].message.content,
     });
   } catch (err) {
-    res.status(500).json({
-      reply: "Ошибка сервера 😢",
-    });
+    res.status(500).json({ error: "Ошибка сервера" });
   }
 });
 
-app.listen(3000, () => console.log("Server started on port 3000"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("Server started on", PORT));
