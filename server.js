@@ -1,16 +1,16 @@
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+/* ✅ Проверка что сервер жив */
 app.get("/", (req, res) => {
   res.send("Groq Horror API работает!");
 });
 
-/* ✅ Главный endpoint */
+/* ✅ Главный чат endpoint */
 app.post("/chat", async (req, res) => {
   try {
     const { message, story, characters } = req.body;
@@ -26,12 +26,12 @@ ${characters.map(c => `${c.name} (${c.role})`).join(", ")}
 
 Игрок написал: "${message}"
 
-Ответь короткими репликами, максимум 1–2 предложения.
-Каждая реплика должна быть в формате:
+Ответь короткими репликами (1–2 предложения).
+Формат:
 
 Имя: текст
 
-Если действие, то:
+Если действие:
 
 (описание действия)
 `;
@@ -39,7 +39,7 @@ ${characters.map(c => `${c.name} (${c.role})`).join(", ")}
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -56,10 +56,11 @@ ${characters.map(c => `${c.name} (${c.role})`).join(", ")}
     res.json({ reply });
 
   } catch (err) {
+    console.error("Groq ошибка:", err);
     res.json({ reply: null, error: err.message });
   }
 });
 
-/* Render порт */
+/* ✅ Render порт */
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log("Server running on port", PORT));
