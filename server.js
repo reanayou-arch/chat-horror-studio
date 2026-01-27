@@ -1,76 +1,65 @@
 import express from "express";
 import cors from "cors";
-import Groq from "groq-sdk";
+import fetch from "node-fetch";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-
-/* ✅ Проверка сервера */
 app.get("/", (req, res) => {
-  res.send("✅ Chat Horror API работает!");
+  res.send("Groq Horror API работает!");
 });
 
-/* ✅ Главный чат */
+/* ✅ Главный endpoint */
 app.post("/chat", async (req, res) => {
   try {
     const { message, story, characters } = req.body;
 
-    if (!message || !story) {
-      return res.status(400).json({ error: "Нет message или story" });
-    }
+    const prompt = `
+Ты участвуешь в хоррор-чате Telegram.
 
-    const systemPrompt = `
-Ты — AI внутри хоррор-игры в стиле Telegram.
-
-ПРАВИЛА:
-- Отвечай коротко (1–2 строки)
-- Реплики как в чате
-- Каждый ответ строго от имени персонажа
-- Не пиши длинные простыни
-- Действия оформляй отдельной репликой в скобках
-- Не ломай стиль Telegram
-
-СЮЖЕТ:
+Сюжет:
 ${story}
 
-ПЕРСОНАЖИ:
-${characters.map(c => `${c.name} — ${c.role}`).join("\n")}
+Персонажи:
+${characters.map(c => `${c.name} (${c.role})`).join(", ")}
 
 Игрок написал: "${message}"
 
-Ответь строго в формате:
+Ответь короткими репликами, максимум 1–2 предложения.
+Каждая реплика должна быть в формате:
 
 Имя: текст
-(действие отдельно)
+
+Если действие, то:
+
+(описание действия)
 `;
 
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant",
-      messages: [{ role: "system", content: systemPrompt }],
-      temperature: 0.9,
-      max_tokens: 120,
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "llama3-8b-8192",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.8
+      })
     });
 
-    const reply =
-      completion.choices?.[0]?.message?.content?.trim() ||
-      "Система: ...тишина.";
+    const data = await response.json();
+
+    const reply = data.choices?.[0]?.message?.content;
 
     res.json({ reply });
+
   } catch (err) {
-    console.error("🔥 Groq Error:", err);
-    res.status(500).json({
-      error: "Ошибка Groq API",
-      details: err.message,
-    });
+    res.json({ reply: null, error: err.message });
   }
 });
 
+/* Render порт */
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log("✅ Groq Server running on port", PORT);
-});
+app.listen(PORT, () => console.log("Server running on port", PORT));
