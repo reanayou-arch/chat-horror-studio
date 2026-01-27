@@ -195,8 +195,9 @@ function pickCharacter() {
 /* ---------- Groq запрос ---------- */
 async function askGroq(userText) {
 
-  const prompt = `
+  const message = `
 Ты хоррор-чат игра.
+
 История: ${story.desc}
 
 Персонажи:
@@ -204,18 +205,19 @@ ${characters.map(c => `- ${c.name}: ${c.role}`).join("\n")}
 
 Правила:
 - отвечай коротко (1-2 предложения)
-- отвечай как персонаж
-- иногда добавляй действие в скобках отдельной строкой
+- отвечай строго как персонаж
+- иногда добавляй действие отдельной строкой: (что-то происходит)
 - НЕ пиши длинные простыни
 
 Игрок написал: "${userText}"
+
 Ответ:
 `;
 
   const res = await fetch("https://chat-horror-server.onrender.com/chat", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ prompt })
+    body: JSON.stringify({ message })   // ✅ ВОТ ИСПРАВЛЕНО
   });
 
   const data = await res.json();
@@ -242,12 +244,11 @@ async function sendMsg() {
 
   const char = pickCharacter();
 
-  addMessage(char.name, "…", false);
+  addMessage(char.name, "…");
 
   try {
     const reply = await askGroq(text);
 
-    // удаляем "…"
     chat.removeChild(chat.lastChild);
 
     addMessage(char.name, reply);
