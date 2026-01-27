@@ -14,8 +14,8 @@
     }
 
     header {
-      padding: 20px;
-      font-size: 26px;
+      padding: 25px;
+      font-size: 30px;
       font-weight: bold;
       text-align: center;
     }
@@ -29,7 +29,7 @@
     .card {
       background: rgba(255,255,255,0.06);
       border-radius: 18px;
-      padding: 15px;
+      padding: 18px;
       margin-bottom: 15px;
     }
 
@@ -45,7 +45,7 @@
     button {
       width: 100%;
       padding: 14px;
-      margin-top: 8px;
+      margin-top: 10px;
       border: none;
       border-radius: 14px;
       font-size: 17px;
@@ -69,19 +69,6 @@
       font-size: 18px;
     }
 
-    .storyItem p {
-      opacity: 0.7;
-      margin: 5px 0;
-      font-size: 14px;
-    }
-
-    .smallBtn {
-      padding: 10px;
-      margin-top: 6px;
-      font-size: 14px;
-      border-radius: 10px;
-    }
-
     .row {
       display: flex;
       gap: 8px;
@@ -98,6 +85,11 @@
       object-fit: cover;
       margin-top: 8px;
     }
+
+    /* скрытие блоков */
+    #authorPanel {
+      display: none;
+    }
   </style>
 </head>
 
@@ -107,9 +99,22 @@
 
 <div class="container">
 
-  <!-- Создание истории -->
-  <div class="card">
-    <h2>Создать историю</h2>
+  <!-- ✅ ГЛАВНОЕ МЕНЮ -->
+  <div class="card" id="mainMenu">
+    <h2>Главное меню</h2>
+
+    <button class="green" onclick="openAuthorPanel()">
+      ✍ Создать историю
+    </button>
+
+    <button class="blue" onclick="scrollToStories()">
+      📚 Мои истории
+    </button>
+  </div>
+
+  <!-- ✅ ПАНЕЛЬ АВТОРА (скрыта) -->
+  <div class="card" id="authorPanel">
+    <h2>Панель автора</h2>
 
     <input id="storyTitle" placeholder="Название истории">
     <textarea id="storyDesc" placeholder="Описание сюжета (для ИИ)"></textarea>
@@ -120,16 +125,16 @@
     <input id="charTraits" placeholder="Характер (злой, добрый...)">
 
     <input id="charAvatar" type="file" accept="image/*">
-
     <img id="preview" class="avatarPreview" style="display:none;">
 
     <button class="green" onclick="addCharacter()">➕ Добавить персонажа</button>
-
     <button class="blue" onclick="saveStory()">💾 Сохранить историю</button>
+
+    <button class="red" onclick="closeAuthorPanel()">⬅ Назад в меню</button>
   </div>
 
-  <!-- Список историй -->
-  <div class="card">
+  <!-- ✅ СПИСОК ИСТОРИЙ -->
+  <div class="card" id="storiesBlock">
     <h2>Ваши истории</h2>
     <div id="storyList"></div>
   </div>
@@ -140,15 +145,28 @@
   let characters = [];
   let stories = JSON.parse(localStorage.getItem("stories") || "[]");
 
-  // аватар preview
+  function openAuthorPanel() {
+    document.getElementById("authorPanel").style.display = "block";
+    document.getElementById("mainMenu").style.display = "none";
+  }
+
+  function closeAuthorPanel() {
+    document.getElementById("authorPanel").style.display = "none";
+    document.getElementById("mainMenu").style.display = "block";
+  }
+
+  function scrollToStories() {
+    document.getElementById("storiesBlock").scrollIntoView({behavior:"smooth"});
+  }
+
   document.getElementById("charAvatar").addEventListener("change", function(e){
     const file = e.target.files[0];
     if(!file) return;
 
     const reader = new FileReader();
     reader.onload = function(){
-      document.getElementById("preview").src = reader.result;
-      document.getElementById("preview").style.display = "block";
+      preview.src = reader.result;
+      preview.style.display = "block";
     };
     reader.readAsDataURL(file);
   });
@@ -161,13 +179,13 @@
 
     if (!name) return alert("Введите имя персонажа");
 
-    let avatar = "";
     if (file) {
       const reader = new FileReader();
       reader.onload = function () {
-        avatar = reader.result;
-
-        characters.push({ name, role, traits, avatar });
+        characters.push({
+          name, role, traits,
+          avatar: reader.result
+        });
 
         alert("Персонаж добавлен!");
 
@@ -189,7 +207,7 @@
     const desc = storyDesc.value.trim();
 
     if (!title || !desc) {
-      return alert("Введите название и описание сюжета!");
+      return alert("Введите название и описание!");
     }
 
     const story = {
@@ -208,6 +226,7 @@
     storyDesc.value = "";
     characters = [];
 
+    closeAuthorPanel();
     renderStories();
   }
 
@@ -236,11 +255,10 @@
 
       div.innerHTML = `
         <h3>${story.title}</h3>
-        <p>${story.desc.substring(0, 60)}...</p>
 
         <div class="row">
-          <button class="smallBtn red" onclick="deleteStory(${story.id})">🗑</button>
-          <button class="smallBtn green" onclick="startStory(${story.id})">▶ Начать</button>
+          <button class="red" onclick="deleteStory(${story.id})">🗑</button>
+          <button class="green" onclick="startStory(${story.id})">▶</button>
         </div>
       `;
 
