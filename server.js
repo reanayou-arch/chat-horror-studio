@@ -12,21 +12,33 @@ const groq = new Groq({
 
 app.post("/chat", async (req, res) => {
   try {
-    const { message, story, characters } = req.body;
+    let { message, story, characters } = req.body;
+
+    // ✅ защита от undefined
+    if (!story) story = "История без описания.";
+    if (!characters || !Array.isArray(characters)) characters = [];
+
+    const charText =
+      characters.length > 0
+        ? characters.map(c =>
+            `${c.name} (${c.role}, ${c.mood})`
+          ).join("\n")
+        : "Персонажей нет.";
 
     const prompt = `
-Ты участвуешь в интерактивной истории.
+Ты участвуешь в интерактивной истории ужасов.
 
 СЮЖЕТ:
 ${story}
 
 ПЕРСОНАЖИ:
-${characters.map(c => `${c.name} (${c.role}, ${c.mood})`).join("\n")}
+${charText}
 
 Игрок написал:
 "${message}"
 
-Продолжи историю как персонаж.
+Продолжи историю красиво, атмосферно и страшно.
+Ответь как персонаж.
 `;
 
     const completion = await groq.chat.completions.create({
@@ -39,13 +51,14 @@ ${characters.map(c => `${c.name} (${c.role}, ${c.mood})`).join("\n")}
     });
 
   } catch (err) {
-    console.log("Ошибка Groq:", err);
-    res.json({
-      reply: "❌ Ошибка Groq API. Проверь ключ и модель."
+    console.error("Ошибка Groq:", err);
+
+    res.status(500).json({
+      reply: "❌ Ошибка Groq API. Сервер упал."
     });
   }
 });
 
 app.listen(10000, () => {
-  console.log("Groq Server running on port 10000");
+  console.log("✅ Groq Server running on port 10000");
 });
