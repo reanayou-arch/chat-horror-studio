@@ -2,69 +2,56 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Чат истории</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Игра</title>
 
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: radial-gradient(circle at top, #081a2b, #02060c);
+      font-family: Arial;
+      background: radial-gradient(circle at top, #111827, #000);
       color: white;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
     }
 
     header {
       display: flex;
       align-items: center;
-      padding: 15px;
       gap: 10px;
-    }
-
-    header h1 {
-      flex: 1;
-      text-align: center;
-      margin: 0;
+      padding: 15px;
       font-size: 22px;
+      font-weight: bold;
     }
 
-    .backBtn {
-      background: rgba(255,255,255,0.1);
+    .back-btn {
+      background: #222;
       border: none;
-      color: white;
       padding: 10px 14px;
-      border-radius: 14px;
+      border-radius: 12px;
+      color: white;
       cursor: pointer;
     }
 
-    #chat {
-      flex: 1;
-      overflow-y: auto;
+    .chat {
       padding: 15px;
       display: flex;
       flex-direction: column;
       gap: 14px;
+      height: calc(100vh - 140px);
+      overflow-y: auto;
     }
 
-    .msgRow {
+    .msg {
       display: flex;
       align-items: flex-end;
       gap: 10px;
-      max-width: 85%;
-    }
-
-    .msgRow.user {
-      align-self: flex-end;
-      flex-direction: row-reverse;
+      max-width: 80%;
     }
 
     .avatar {
       width: 42px;
       height: 42px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.15);
+      background: #222;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -72,51 +59,47 @@
       font-size: 18px;
     }
 
-    .bubbleWrap {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .name {
-      font-size: 13px;
-      opacity: 0.6;
-      margin-bottom: 4px;
-    }
-
     .bubble {
-      background: rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.06);
       padding: 12px 14px;
       border-radius: 18px;
       font-size: 16px;
       line-height: 1.3;
-      white-space: pre-wrap;
     }
 
-    .user .bubble {
+    .you {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .you .bubble {
       background: #2563eb;
     }
 
-    footer {
+    .input-area {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
       display: flex;
-      padding: 12px;
       gap: 10px;
+      padding: 12px;
+      background: rgba(0,0,0,0.8);
     }
 
     input {
       flex: 1;
       padding: 14px;
-      border-radius: 18px;
+      border-radius: 14px;
       border: none;
-      outline: none;
       font-size: 16px;
     }
 
-    button.sendBtn {
-      background: #22c55e;
+    button.send {
+      width: 60px;
       border: none;
-      border-radius: 18px;
-      padding: 0 18px;
-      font-size: 18px;
+      border-radius: 14px;
+      background: #22c55e;
+      font-size: 22px;
       cursor: pointer;
     }
   </style>
@@ -125,143 +108,97 @@
 <body>
 
 <header>
-  <button class="backBtn" onclick="goBack()">← Назад</button>
-  <h1 id="storyTitle">История</h1>
+  <button class="back-btn" onclick="goBack()">← Назад</button>
+  <div id="storyTitle">История</div>
 </header>
 
-<div id="chat"></div>
+<div class="chat" id="chat"></div>
 
-<footer>
-  <input id="msgInput" placeholder="Сообщение...">
-  <button class="sendBtn" onclick="sendMsg()">➤</button>
-</footer>
+<div class="input-area">
+  <input id="userInput" placeholder="Сообщение...">
+  <button class="send" onclick="sendMessage()">➤</button>
+</div>
 
 <script>
-/* ---------- Получаем историю ---------- */
-const urlParams = new URLSearchParams(window.location.search);
-const storyId = urlParams.get("id");
+  const chat = document.getElementById("chat");
+  const input = document.getElementById("userInput");
 
-const stories = JSON.parse(localStorage.getItem("stories")) || [];
-const story = stories.find(s => String(s.id) === String(storyId));
+  const storyData = JSON.parse(localStorage.getItem("currentStory"));
 
-if (!story) {
-  alert("История не найдена!");
-  location.href = "index.html";
-}
-
-document.getElementById("storyTitle").innerText = story.title;
-
-const characters = story.characters;
-const chat = document.getElementById("chat");
-
-/* ---------- Вспомогательное ---------- */
-function avatarLetter(name) {
-  return name.trim()[0].toUpperCase();
-}
-
-function addMessage(author, text, isUser=false) {
-  const row = document.createElement("div");
-  row.className = "msgRow" + (isUser ? " user" : "");
-
-  const avatar = document.createElement("div");
-  avatar.className = "avatar";
-  avatar.innerText = isUser ? "Я" : avatarLetter(author);
-
-  const wrap = document.createElement("div");
-  wrap.className = "bubbleWrap";
-
-  const nameEl = document.createElement("div");
-  nameEl.className = "name";
-  nameEl.innerText = author;
-
-  const bubble = document.createElement("div");
-  bubble.className = "bubble";
-  bubble.innerText = text;
-
-  wrap.appendChild(nameEl);
-  wrap.appendChild(bubble);
-
-  row.appendChild(avatar);
-  row.appendChild(wrap);
-
-  chat.appendChild(row);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function pickCharacter() {
-  return characters[Math.floor(Math.random() * characters.length)];
-}
-
-/* ---------- Groq запрос ---------- */
-async function askGroq(userText) {
-
-  const message = `
-Ты хоррор-чат игра.
-
-История: ${story.desc}
-
-Персонажи:
-${characters.map(c => `- ${c.name}: ${c.role}`).join("\n")}
-
-Правила:
-- отвечай коротко (1-2 предложения)
-- отвечай строго как персонаж
-- иногда добавляй действие отдельной строкой: (что-то происходит)
-- НЕ пиши длинные простыни
-
-Игрок написал: "${userText}"
-
-Ответ:
-`;
-
-  const res = await fetch("https://chat-horror-server.onrender.com/chat", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ message })   // ✅ ВОТ ИСПРАВЛЕНО
-  });
-
-  const data = await res.json();
-  return data.reply;
-}
-
-/* ---------- Старт ---------- */
-addMessage("Система", "История начинается...");
-
-setTimeout(() => {
-  const first = pickCharacter();
-  addMessage(first.name, "Я чувствую... здесь что-то не так.");
-}, 800);
-
-
-/* ---------- Отправка ---------- */
-async function sendMsg() {
-  const input = document.getElementById("msgInput");
-  const text = input.value.trim();
-  if (!text) return;
-
-  addMessage("Вы", text, true);
-  input.value = "";
-
-  const char = pickCharacter();
-
-  addMessage(char.name, "…");
-
-  try {
-    const reply = await askGroq(text);
-
-    chat.removeChild(chat.lastChild);
-
-    addMessage(char.name, reply);
-
-  } catch (e) {
-    chat.removeChild(chat.lastChild);
-    addMessage("Система", "❌ Ошибка Groq API");
+  if (!storyData) {
+    alert("История не найдена!");
+    location.href = "index.html";
   }
-}
 
-function goBack() {
-  location.href = "index.html";
-}
+  document.getElementById("storyTitle").innerText = storyData.title;
+
+  function addMessage(name, text, isYou=false) {
+    const msg = document.createElement("div");
+    msg.className = "msg" + (isYou ? " you" : "");
+
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.innerText = name[0].toUpperCase();
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.innerText = text;
+
+    msg.appendChild(avatar);
+    msg.appendChild(bubble);
+
+    chat.appendChild(msg);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  /* ✅ Старт истории */
+  addMessage("Система", "История начинается...");
+  addMessage(storyData.characters[0]?.name || "Персонаж",
+    "Я чувствую... здесь что-то не так.");
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMessage("Вы", text, true);
+    input.value = "";
+
+    try {
+      const res = await fetch("https://chat-horror-api.onrender.com/chat", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          message: text,
+          story: storyData.description,
+          characters: storyData.characters
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.reply) {
+        const lines = data.reply.split("\n");
+
+        lines.forEach(line => {
+          if (line.includes(":")) {
+            const parts = line.split(":");
+            const name = parts[0].trim();
+            const msg = parts.slice(1).join(":").trim();
+            addMessage(name, msg);
+          } else if (line.startsWith("(")) {
+            addMessage("Система", line);
+          }
+        });
+      }
+
+    } catch (e) {
+      addMessage("Система", "❌ Ошибка Groq API");
+    }
+  }
+
+  function goBack() {
+    location.href = "index.html";
+  }
 </script>
 
 </body>
