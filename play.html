@@ -3,25 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Чат истории</title>
+  <title>Story Chat</title>
 
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: Arial;
       background: linear-gradient(#050d18, #061c30);
-      height: 100vh;
       display: flex;
       flex-direction: column;
+      height: 100vh;
       color: white;
     }
 
     header {
+      padding: 15px;
       text-align: center;
-      padding: 14px;
-      font-size: 20px;
+      font-size: 18px;
       font-weight: bold;
-      background: rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.05);
     }
 
     #chat {
@@ -30,55 +30,39 @@
       padding: 15px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
 
-    /* 💬 Сообщение */
     .msg {
-      max-width: 75%;
-      padding: 10px 12px;
+      max-width: 78%;
+      padding: 12px;
       border-radius: 18px;
-      font-size: 15px;
-      line-height: 1.4;
       display: flex;
       flex-direction: column;
-      word-wrap: break-word;
-      animation: fadeIn 0.25s ease;
+      animation: fade 0.2s ease;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes fade {
+      from {opacity:0; transform:translateY(4px);}
+      to {opacity:1; transform:translateY(0);}
     }
 
-    /* 👤 Имя */
-    .msg .name {
+    .name {
       font-size: 12px;
-      opacity: 0.65;
-      margin-bottom: 4px;
+      opacity: 0.6;
+      margin-bottom: 5px;
     }
 
-    /* 📩 Текст */
-    .msg .text {
-      font-size: 15px;
-      white-space: pre-wrap;
-    }
-
-    /* Игрок */
-    .user {
-      align-self: flex-end;
-      background: #1e90ff;
-      border-bottom-right-radius: 6px;
-    }
-
-    /* Персонаж */
     .bot {
       align-self: flex-start;
       background: rgba(255,255,255,0.10);
-      border-bottom-left-radius: 6px;
     }
 
-    /* Поле ввода */
+    .user {
+      align-self: flex-end;
+      background: dodgerblue;
+    }
+
     footer {
       display: flex;
       padding: 10px;
@@ -90,18 +74,17 @@
       padding: 14px;
       font-size: 16px;
       border: none;
-      outline: none;
       border-radius: 16px;
+      outline: none;
     }
 
     button {
+      width: 55px;
       margin-left: 10px;
-      width: 52px;
       border: none;
       border-radius: 16px;
       background: limegreen;
       font-size: 20px;
-      cursor: pointer;
     }
   </style>
 </head>
@@ -109,7 +92,6 @@
 <body>
 
 <header id="title">История</header>
-
 <div id="chat"></div>
 
 <footer>
@@ -123,61 +105,47 @@
 
   let stories = JSON.parse(localStorage.getItem("stories")) || [];
   let id = localStorage.getItem("currentStoryId");
-
   let story = stories.find(s => s.id == id);
+
   document.getElementById("title").innerText = story.title;
 
   let charactersText = story.characters.map(c =>
     `${c.name} (${c.role})`
   ).join(", ");
 
-  // ✅ Добавить сообщение в чат
   function addMessage(name, text, cls) {
     const div = document.createElement("div");
     div.className = "msg " + cls;
-
-    div.innerHTML = `
-      <div class="name">${name}</div>
-      <div class="text">${text}</div>
-    `;
-
+    div.innerHTML = `<div class="name">${name}</div>${text}`;
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
   }
 
-  // ✅ Разделение ответа AI на много персонажей
-  function splitMultiReply(reply) {
-    let lines = reply.split("\n").filter(l => l.trim() !== "");
-
-    let messages = [];
+  function splitReply(reply) {
+    let lines = reply.split("\n").filter(x => x.trim() !== "");
+    let result = [];
 
     for (let line of lines) {
       if (line.includes(":")) {
-        let parts = line.split(":");
-        let name = parts[0].trim();
-        let text = parts.slice(1).join(":").trim();
-
-        messages.push({ name, text });
+        let [n, ...t] = line.split(":");
+        result.push({ name: n.trim(), text: t.join(":").trim() });
       }
     }
 
-    // если AI вдруг прислал без формата
-    if (messages.length === 0) {
-      messages.push({ name: "Персонаж", text: reply });
-    }
+    if (result.length === 0)
+      result.push({ name: "Персонаж", text: reply });
 
-    return messages;
+    return result;
   }
 
-  // ✅ Вступление истории
-  async function startIntro() {
+  async function intro() {
     addMessage("Система", "История начинается...", "bot");
 
-    const res = await fetch(API, {
+    let res = await fetch(API, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {"Content-Type":"application/json"},
       body: JSON.stringify({
-        message: "Начни историю вступлением. Затем сразу несколько персонажей могут написать первые реплики.",
+        message: "Начни историю первым вступлением и репликами персонажей.",
         story: `
 СЮЖЕТ:
 ${story.desc}
@@ -185,25 +153,21 @@ ${story.desc}
 ПЕРСОНАЖИ:
 ${charactersText}
 
-ФОРМАТ ОТВЕТА:
-Рассказчик: вступление
-Имя: сообщение
-Имя: сообщение
+Формат:
+Имя: текст
+Имя: текст
 `
       })
     });
 
-    const data = await res.json();
-    let parsedMessages = splitMultiReply(data.reply);
-
-    parsedMessages.forEach(m => {
-      addMessage(m.name, m.text, "bot");
-    });
+    let data = await res.json();
+    splitReply(data.reply).forEach(m =>
+      addMessage(m.name, m.text, "bot")
+    );
   }
 
-  startIntro();
+  intro();
 
-  // ✅ Отправка сообщения игрока
   async function send() {
     let text = document.getElementById("text").value.trim();
     if (!text) return;
@@ -211,9 +175,9 @@ ${charactersText}
     addMessage("Вы", text, "user");
     document.getElementById("text").value = "";
 
-    const res = await fetch(API, {
+    let res = await fetch(API, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {"Content-Type":"application/json"},
       body: JSON.stringify({
         message: text,
         story: `
@@ -223,24 +187,17 @@ ${story.desc}
 ПЕРСОНАЖИ:
 ${charactersText}
 
-ВАЖНО:
-Отвечай всегда несколькими репликами разных персонажей.
-Формат строго:
-
-Имя: текст
+Отвечай несколькими персонажами:
 Имя: текст
 Имя: текст
 `
       })
     });
 
-    const data = await res.json();
-
-    let parsedMessages = splitMultiReply(data.reply);
-
-    parsedMessages.forEach(m => {
-      addMessage(m.name, m.text, "bot");
-    });
+    let data = await res.json();
+    splitReply(data.reply).forEach(m =>
+      addMessage(m.name, m.text, "bot")
+    );
   }
 </script>
 
