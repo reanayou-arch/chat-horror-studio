@@ -1,74 +1,86 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>История</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Story Chat</title>
 
   <style>
     body {
       margin: 0;
       font-family: Arial;
-      background: #0b1220;
+      background: linear-gradient(to bottom, #05070d, #0b1220);
       color: white;
     }
 
     h1 {
       text-align: center;
-      margin: 15px;
+      padding: 20px;
     }
 
     #chat {
-      padding: 15px;
-      height: 75vh;
-      overflow-y: auto;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+      min-height: 70vh;
     }
 
     .msg {
-      margin: 10px 0;
-      padding: 12px;
-      border-radius: 15px;
-      max-width: 75%;
+      margin: 15px 0;
+      padding: 15px;
+      border-radius: 18px;
+      max-width: 80%;
+      position: relative;
     }
 
     .bot {
-      background: #222;
+      background: rgba(255,255,255,0.08);
     }
 
     .user {
-      background: dodgerblue;
+      background: #2a78ff;
       margin-left: auto;
       text-align: right;
     }
 
     .name {
-      font-size: 12px;
-      opacity: 0.6;
+      font-size: 13px;
+      opacity: 0.7;
       margin-bottom: 5px;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      position: absolute;
+      left: -40px;
+      top: 15px;
     }
 
     #inputBox {
       display: flex;
+      padding: 15px;
       position: fixed;
       bottom: 0;
       width: 100%;
-      padding: 10px;
-      background: #111;
+      background: #05070d;
     }
 
     input {
       flex: 1;
-      padding: 12px;
-      border-radius: 12px;
+      padding: 15px;
+      border-radius: 15px;
       border: none;
+      outline: none;
       font-size: 16px;
     }
 
     button {
       margin-left: 10px;
-      padding: 12px 15px;
+      padding: 15px 20px;
+      border-radius: 15px;
       border: none;
-      border-radius: 12px;
       background: limegreen;
       font-size: 18px;
       cursor: pointer;
@@ -78,58 +90,110 @@
 
 <body>
 
-<h1 id="storyTitle"></h1>
+<h1 id="storyTitle">История</h1>
+
 <div id="chat"></div>
 
 <div id="inputBox">
-  <input id="msgInput" placeholder="Напиши сообщение..."/>
-  <button onclick="sendMessage()">▶</button>
+  <input id="text" placeholder="Напиши сообщение...">
+  <button onclick="send()">▶</button>
 </div>
 
 <script>
-const story = JSON.parse(localStorage.getItem("currentStory"));
-if (!story) location.href = "index.html";
+  const stories = JSON.parse(localStorage.getItem("stories")) || [];
+  const index = localStorage.getItem("currentStory");
 
-document.getElementById("storyTitle").innerText = story.title;
+  const story = stories[index];
 
-const chatBox = document.getElementById("chat");
+  document.getElementById("storyTitle").innerText = story.title;
 
-function addMessage(sender, text) {
-  const div = document.createElement("div");
-  div.className = "msg " + sender;
+  const chat = document.getElementById("chat");
 
-  div.innerHTML = `
-    <div class="name">${sender === "bot" ? "Персонаж" : "Вы"}</div>
-    <div>${text}</div>
-  `;
+  function addMessage(text, sender="bot", name="Персонаж", avatar="") {
+    const div = document.createElement("div");
+    div.className = "msg " + sender;
 
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+    if (sender === "bot") {
+      div.innerHTML = `
+        ${avatar ? `<img class="avatar" src="${avatar}">` : ""}
+        <div class="name">${name}</div>
+        ${text}
+      `;
+    } else {
+      div.innerHTML = `
+        <div class="name">Вы</div>
+        ${text}
+      `;
+    }
 
-addMessage("bot", "Привет... Начинаем историю.");
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
 
-async function sendMessage() {
-  const input = document.getElementById("msgInput");
-  const message = input.value.trim();
-  if (!message) return;
+  // ✅ стартовое сообщение от ИИ
+  async function startIntro() {
+    const chars = story.characters.map(c =>
+      `${c.name} (${c.role}, характер: ${c.mood})`
+    ).join(", ");
 
-  addMessage("user", message);
-  input.value = "";
+    const prompt = `
+Ты — интерактивный рассказчик.
+История: ${story.plot}
 
-  const res = await fetch("https://chat-horror-api.onrender.com/chat", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      message,
-      story: story.desc,
-      characters: story.characters
-    })
-  });
+Персонажи: ${chars}
 
-  const data = await res.json();
-  addMessage("bot", data.reply);
-}
+Начни историю первым сообщением.
+Опиши обстановку и кто рядом.
+Пиши как персонаж, выбирая кто говорит.
+Формат:
+Имя: текст
+`;
+
+    const res = await fetch("https://chat-horror-api.onrender.com/chat", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({message: prompt})
+    });
+
+    const data = await res.json();
+
+    renderBotReply(data.reply);
+  }
+
+  function renderBotReply(reply) {
+    // пытаемся разделить "Имя: текст"
+    let name = "Персонаж";
+    let text = reply;
+
+    if (reply.includes(":")) {
+      name = reply.split(":")[0];
+      text = reply.slice(name.length + 1);
+    }
+
+    const char = story.characters.find(c => c.name === name);
+
+    addMessage(text, "bot", name, char?.avatar || "");
+  }
+
+  async function send() {
+    const input = document.getElementById("text");
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    addMessage(msg, "user");
+    input.value = "";
+
+    const res = await fetch("https://chat-horror-api.onrender.com/chat", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({message: msg})
+    });
+
+    const data = await res.json();
+    renderBotReply(data.reply);
+  }
+
+  startIntro();
 </script>
 
 </body>
