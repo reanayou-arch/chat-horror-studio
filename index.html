@@ -26,6 +26,7 @@
       background: rgba(255,255,255,0.06);
       padding: 15px;
       border-radius: 20px;
+      margin-bottom: 20px;
     }
 
     input, textarea {
@@ -52,21 +53,26 @@
     .blue { background: dodgerblue; }
     .red { background: crimson; }
 
+    .charItem {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .charItem img {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
     .storyCard {
       margin-top: 15px;
       padding: 14px;
       border-radius: 18px;
       background: rgba(255,255,255,0.07);
-    }
-
-    .storyCard h3 {
-      margin: 0;
-      font-size: 16px;
-    }
-
-    .storyCard p {
-      font-size: 13px;
-      opacity: 0.7;
     }
 
     .row {
@@ -93,6 +99,9 @@
   <input id="charName" placeholder="Имя персонажа">
   <input id="charRole" placeholder="Роль (мама, брат...)">
 
+  <!-- ✅ загрузка аватарки -->
+  <input id="charAvatar" type="file" accept="image/*">
+
   <button class="green" onclick="addChar()">➕ Добавить персонажа</button>
 
   <div id="charList"></div>
@@ -101,7 +110,7 @@
 
 </div>
 
-<div class="panel" style="margin-top:20px;">
+<div class="panel">
   <h2>Ваши истории</h2>
   <div id="stories"></div>
 </div>
@@ -112,13 +121,42 @@
   function addChar() {
     let name = charName.value.trim();
     let role = charRole.value.trim();
+    let file = charAvatar.files[0];
+
     if (!name || !role) return alert("Заполни имя и роль!");
 
-    characters.push({ name, role });
+    if (!file) return alert("Загрузи аватарку!");
 
-    charList.innerHTML += `<p>✔ ${name} (${role})</p>`;
-    charName.value = "";
-    charRole.value = "";
+    let reader = new FileReader();
+    reader.onload = function () {
+
+      characters.push({
+        name,
+        role,
+        avatar: reader.result
+      });
+
+      renderChars();
+
+      charName.value = "";
+      charRole.value = "";
+      charAvatar.value = "";
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  function renderChars() {
+    charList.innerHTML = "";
+
+    characters.forEach(c => {
+      charList.innerHTML += `
+        <div class="charItem">
+          <img src="${c.avatar}">
+          ${c.name} (${c.role})
+        </div>
+      `;
+    });
   }
 
   function saveStory() {
@@ -167,8 +205,8 @@
           <p>${story.desc}</p>
 
           <div class="row">
-            <button class="red" onclick="deleteStory(${story.id})">❌ Удалить</button>
-            <button class="green" onclick="startStory(${story.id})">▶ Начать</button>
+            <button class="red" onclick="deleteStory(${story.id})">❌</button>
+            <button class="green" onclick="startStory(${story.id})">▶ Играть</button>
           </div>
         </div>
       `;
