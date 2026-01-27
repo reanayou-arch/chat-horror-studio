@@ -144,12 +144,37 @@
     location.href = "index.html";
   }
 
-  /* ✅ Защита от undefined */
   storyData.title = storyData.title || "Без названия";
   storyData.description = storyData.description || "Хоррор история.";
   storyData.characters = storyData.characters || [];
 
   document.getElementById("storyTitle").innerText = storyData.title;
+
+  /* ✅ История сообщений для AI */
+  let aiMessages = [];
+
+  /* ✅ Добавляем системный промпт */
+  aiMessages.push({
+    role: "system",
+    content: `
+Ты — чат-хоррор история в стиле Telegram.
+
+Правила:
+- Пиши короткими сообщениями.
+- Персонажи отвечают строго по ролям.
+- Формат ответа:
+
+Имя: реплика
+Имя: реплика
+(Действие отдельно)
+
+Персонажи:
+${storyData.characters.map(c => `${c.name} — ${c.role}`).join("\n")}
+
+Сюжет:
+${storyData.description}
+`
+  });
 
   /* ✅ Сообщение */
   function addMessage(name, text, isYou = false) {
@@ -184,10 +209,7 @@
   addMessage("Система", "История начинается...");
 
   setTimeout(() => {
-    addMessage(
-      "Система",
-      "Ты оказываешься внутри событий. Напиши первое сообщение..."
-    );
+    addMessage("Система", "Ты внутри событий. Напиши первое сообщение...");
   }, 600);
 
   /* ✅ Отправка игрока */
@@ -198,14 +220,18 @@
     addMessage("Вы", text, true);
     input.value = "";
 
+    /* ✅ Добавляем сообщение игрока в историю */
+    aiMessages.push({
+      role: "user",
+      content: text
+    });
+
     try {
       const res = await fetch("https://chat-horror-api.onrender.com/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: text,
-          story: storyData.description,
-          characters: storyData.characters
+          messages: aiMessages
         })
       });
 
@@ -216,16 +242,27 @@
         return;
       }
 
-      /* ✅ Парсим ответ */
+      /* ✅ Добавляем ответ AI в историю */
+      aiMessages.push({
+        role: "assistant",
+        content: data.reply
+      });
+
+      /* ✅ Разбиваем на Telegram реплики */
       const lines = data.reply.split("\n");
 
       lines.forEach(line => {
+        line = line.trim();
+        if (!line) return;
+
         if (line.includes(":")) {
           const parts = line.split(":");
           const name = parts[0].trim();
           const msg = parts.slice(1).join(":").trim();
           addMessage(name, msg);
         } else if (line.startsWith("(")) {
+          addMessage("Система", line);
+        } else {
           addMessage("Система", line);
         }
       });
