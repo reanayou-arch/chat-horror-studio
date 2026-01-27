@@ -7,58 +7,59 @@ app.use(cors());
 app.use(express.json());
 
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY
+  apiKey: process.env.GROQ_API_KEY,
+});
+
+const MODEL = "llama-3.1-8b-instant"; 
+// ✅ Эта модель точно работает сейчас
+
+app.get("/", (req, res) => {
+  res.send("Groq API работает!");
 });
 
 app.post("/chat", async (req, res) => {
   try {
-    let { message, story, characters } = req.body;
+    const { message, story } = req.body;
 
-    // ✅ защита от undefined
-    if (!story) story = "История без описания.";
-    if (!characters || !Array.isArray(characters)) characters = [];
+    if (!message) {
+      return res.status(400).json({
+        reply: "Нет сообщения",
+      });
+    }
 
-    const charText =
-      characters.length > 0
-        ? characters.map(c =>
-            `${c.name} (${c.role}, ${c.mood})`
-          ).join("\n")
-        : "Персонажей нет.";
+    const systemPrompt = `
+Ты — рассказчик хоррор-истории.
 
-    const prompt = `
-Ты участвуешь в интерактивной истории ужасов.
+История:
+${story || "Без описания"}
 
-СЮЖЕТ:
-${story}
-
-ПЕРСОНАЖИ:
-${charText}
-
-Игрок написал:
-"${message}"
-
-Продолжи историю красиво, атмосферно и страшно.
-Ответь как персонаж.
+Начни сюжет первым сообщением, если игрок только вошёл.
+Отвечай атмосферно и подробно.
 `;
 
     const completion = await groq.chat.completions.create({
-      model: "llama3-8b-8192",
-      messages: [{ role: "user", content: prompt }]
+      model: MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: message },
+      ],
     });
 
-    res.json({
-      reply: completion.choices[0].message.content
-    });
+    const reply =
+      completion.choices?.[0]?.message?.content ||
+      "Нет ответа от Groq";
 
+    res.json({ reply });
   } catch (err) {
-    console.error("Ошибка Groq:", err);
+    console.error("🔥 Ошибка Groq:", err);
 
     res.status(500).json({
-      reply: "❌ Ошибка Groq API. Сервер упал."
+      reply: "Ошибка Groq API. Проверь ключ и модель.",
     });
   }
 });
 
-app.listen(10000, () => {
-  console.log("✅ Groq Server running on port 10000");
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+  console.log("✅ Groq Server running on port", PORT);
 });
