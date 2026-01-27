@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>История</title>
+  <title>Чат истории</title>
 
   <style>
     body {
@@ -70,19 +70,11 @@
       justify-content: center;
       font-weight: bold;
       font-size: 18px;
-      flex-shrink: 0;
     }
 
-    .bubble {
-      background: rgba(255,255,255,0.07);
-      padding: 12px 14px;
-      border-radius: 18px;
-      font-size: 16px;
-      line-height: 1.3;
-    }
-
-    .user .bubble {
-      background: #2563eb;
+    .bubbleWrap {
+      display: flex;
+      flex-direction: column;
     }
 
     .name {
@@ -91,10 +83,17 @@
       margin-bottom: 4px;
     }
 
-    .actionBubble {
-      font-style: italic;
-      opacity: 0.75;
-      background: rgba(255,255,255,0.04);
+    .bubble {
+      background: rgba(255,255,255,0.07);
+      padding: 12px 14px;
+      border-radius: 18px;
+      font-size: 16px;
+      line-height: 1.3;
+      white-space: pre-wrap;
+    }
+
+    .user .bubble {
+      background: #2563eb;
     }
 
     footer {
@@ -138,7 +137,7 @@
 </footer>
 
 <script>
-/* -------------------- Загрузка истории -------------------- */
+/* ---------- Получаем историю ---------- */
 const urlParams = new URLSearchParams(window.location.search);
 const storyId = urlParams.get("id");
 
@@ -152,17 +151,15 @@ if (!story) {
 
 document.getElementById("storyTitle").innerText = story.title;
 
-const characters = story.characters || [];
-
-/* -------------------- Telegram сообщения -------------------- */
+const characters = story.characters;
 const chat = document.getElementById("chat");
 
+/* ---------- Вспомогательное ---------- */
 function avatarLetter(name) {
   return name.trim()[0].toUpperCase();
 }
 
 function addMessage(author, text, isUser=false) {
-
   const row = document.createElement("div");
   row.className = "msgRow" + (isUser ? " user" : "");
 
@@ -170,7 +167,8 @@ function addMessage(author, text, isUser=false) {
   avatar.className = "avatar";
   avatar.innerText = isUser ? "Я" : avatarLetter(author);
 
-  const bubbleWrap = document.createElement("div");
+  const wrap = document.createElement("div");
+  wrap.className = "bubbleWrap";
 
   const nameEl = document.createElement("div");
   nameEl.className = "name";
@@ -180,80 +178,86 @@ function addMessage(author, text, isUser=false) {
   bubble.className = "bubble";
   bubble.innerText = text;
 
-  bubbleWrap.appendChild(nameEl);
-  bubbleWrap.appendChild(bubble);
+  wrap.appendChild(nameEl);
+  wrap.appendChild(bubble);
 
   row.appendChild(avatar);
-  row.appendChild(bubbleWrap);
+  row.appendChild(wrap);
 
   chat.appendChild(row);
   chat.scrollTop = chat.scrollHeight;
 }
 
-/* -------------------- Реплика действия -------------------- */
-function addAction(author, actionText) {
-  const row = document.createElement("div");
-  row.className = "msgRow";
-
-  const avatar = document.createElement("div");
-  avatar.className = "avatar";
-  avatar.innerText = avatarLetter(author);
-
-  const bubble = document.createElement("div");
-  bubble.className = "bubble actionBubble";
-  bubble.innerText = "(" + actionText + ")";
-
-  row.appendChild(avatar);
-  row.appendChild(bubble);
-
-  chat.appendChild(row);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-/* -------------------- AI Логика ролей -------------------- */
 function pickCharacter() {
   return characters[Math.floor(Math.random() * characters.length)];
 }
 
-/* короткие реплики */
-function shortReply(text) {
-  return text.split(".")[0].slice(0, 80) + "...";
+/* ---------- Groq запрос ---------- */
+async function askGroq(userText) {
+
+  const prompt = `
+Ты хоррор-чат игра.
+История: ${story.desc}
+
+Персонажи:
+${characters.map(c => `- ${c.name}: ${c.role}`).join("\n")}
+
+Правила:
+- отвечай коротко (1-2 предложения)
+- отвечай как персонаж
+- иногда добавляй действие в скобках отдельной строкой
+- НЕ пиши длинные простыни
+
+Игрок написал: "${userText}"
+Ответ:
+`;
+
+  const res = await fetch("https://chat-horror-server.onrender.com/chat", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ prompt })
+  });
+
+  const data = await res.json();
+  return data.reply;
 }
 
-/* -------------------- Старт истории -------------------- */
+/* ---------- Старт ---------- */
 addMessage("Система", "История начинается...");
 
 setTimeout(() => {
-  addAction("Система", "Темнота сгущается вокруг...");
-}, 700);
-
-setTimeout(() => {
   const first = pickCharacter();
-  addMessage(first.name, "Привет... Всё начинается прямо сейчас.");
-}, 1200);
+  addMessage(first.name, "Я чувствую... здесь что-то не так.");
+}, 800);
 
-/* -------------------- Отправка сообщения -------------------- */
+
+/* ---------- Отправка ---------- */
 async function sendMsg() {
   const input = document.getElementById("msgInput");
-  const userText = input.value.trim();
-  if (!userText) return;
+  const text = input.value.trim();
+  if (!text) return;
 
-  addMessage("Вы", userText, true);
+  addMessage("Вы", text, true);
   input.value = "";
 
-  // персонаж отвечает строго по роли
   const char = pickCharacter();
 
-  setTimeout(() => {
-    addAction(char.name, `${char.role} внимательно реагирует...`);
-  }, 600);
+  addMessage(char.name, "…", false);
 
-  setTimeout(() => {
-    addMessage(char.name, shortReply("Я понимаю... Но здесь что-то не так."));
-  }, 1200);
+  try {
+    const reply = await askGroq(text);
+
+    // удаляем "…"
+    chat.removeChild(chat.lastChild);
+
+    addMessage(char.name, reply);
+
+  } catch (e) {
+    chat.removeChild(chat.lastChild);
+    addMessage("Система", "❌ Ошибка Groq API");
+  }
 }
 
-/* -------------------- Назад -------------------- */
 function goBack() {
   location.href = "index.html";
 }
