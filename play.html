@@ -43,6 +43,12 @@
       display: flex;
       flex-direction: column;
       word-wrap: break-word;
+      animation: fadeIn 0.25s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     /* 👤 Имя */
@@ -139,18 +145,28 @@
     chat.scrollTop = chat.scrollHeight;
   }
 
-  // ✅ Парсинг AI ответа "Имя: текст"
-  function parseAI(reply) {
-    let parts = reply.split(":");
+  // ✅ Разделение ответа AI на много персонажей
+  function splitMultiReply(reply) {
+    let lines = reply.split("\n").filter(l => l.trim() !== "");
 
-    if (parts.length < 2) {
-      return { name: "Персонаж", text: reply };
+    let messages = [];
+
+    for (let line of lines) {
+      if (line.includes(":")) {
+        let parts = line.split(":");
+        let name = parts[0].trim();
+        let text = parts.slice(1).join(":").trim();
+
+        messages.push({ name, text });
+      }
     }
 
-    let name = parts[0].trim();
-    let text = parts.slice(1).join(":").trim();
+    // если AI вдруг прислал без формата
+    if (messages.length === 0) {
+      messages.push({ name: "Персонаж", text: reply });
+    }
 
-    return { name, text };
+    return messages;
   }
 
   // ✅ Вступление истории
@@ -161,22 +177,28 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: "Начни историю красивым вступлением как рассказчик.",
+        message: "Начни историю вступлением. Затем сразу несколько персонажей могут написать первые реплики.",
         story: `
-Сюжет: ${story.desc}
+СЮЖЕТ:
+${story.desc}
 
-Персонажи: ${charactersText}
+ПЕРСОНАЖИ:
+${charactersText}
 
-ФОРМАТ:
-Рассказчик: текст вступления
+ФОРМАТ ОТВЕТА:
+Рассказчик: вступление
+Имя: сообщение
+Имя: сообщение
 `
       })
     });
 
     const data = await res.json();
-    const parsed = parseAI(data.reply);
+    let parsedMessages = splitMultiReply(data.reply);
 
-    addMessage(parsed.name, parsed.text, "bot");
+    parsedMessages.forEach(m => {
+      addMessage(m.name, m.text, "bot");
+    });
   }
 
   startIntro();
@@ -195,21 +217,30 @@
       body: JSON.stringify({
         message: text,
         story: `
-Сюжет: ${story.desc}
+СЮЖЕТ:
+${story.desc}
 
-Персонажи: ${charactersText}
+ПЕРСОНАЖИ:
+${charactersText}
 
 ВАЖНО:
-Всегда отвечай строго так:
-ИмяПерсонажа: текст
+Отвечай всегда несколькими репликами разных персонажей.
+Формат строго:
+
+Имя: текст
+Имя: текст
+Имя: текст
 `
       })
     });
 
     const data = await res.json();
-    const parsed = parseAI(data.reply);
 
-    addMessage(parsed.name, parsed.text, "bot");
+    let parsedMessages = splitMultiReply(data.reply);
+
+    parsedMessages.forEach(m => {
+      addMessage(m.name, m.text, "bot");
+    });
   }
 </script>
 
