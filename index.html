@@ -52,7 +52,6 @@
     .green { background: limegreen; }
     .blue { background: dodgerblue; }
     .red { background: crimson; }
-    .gray { background: #333; }
 
     .charItem {
       display: flex;
@@ -62,11 +61,17 @@
       font-size: 14px;
     }
 
-    .charItem img {
+    /* БУКВА-АВАТАР */
+    .avatarLetter {
       width: 38px;
       height: 38px;
       border-radius: 50%;
-      object-fit: cover;
+      background: rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 16px;
     }
 
     .storyCard {
@@ -101,7 +106,6 @@
 
   <input id="charName" placeholder="Имя персонажа">
   <input id="charRole" placeholder="Роль (мама, брат...)">
-  <input id="charAvatar" type="file" accept="image/*">
 
   <button class="green" onclick="addChar()">➕ Добавить персонажа</button>
 
@@ -125,44 +129,32 @@
   function addChar() {
     let name = charName.value.trim();
     let role = charRole.value.trim();
-    let file = charAvatar.files[0];
 
     if (!name || !role) {
       alert("Заполни имя и роль!");
       return;
     }
 
-    if (!file) {
-      alert("Выбери аватарку!");
-      return;
-    }
+    characters.push({
+      name,
+      role
+    });
 
-    let reader = new FileReader();
+    renderChars();
 
-    reader.onload = function () {
-      characters.push({
-        name,
-        role,
-        avatar: reader.result
-      });
-
-      renderChars();
-
-      charName.value = "";
-      charRole.value = "";
-      charAvatar.value = "";
-    };
-
-    reader.readAsDataURL(file);
+    charName.value = "";
+    charRole.value = "";
   }
 
   function renderChars() {
     charList.innerHTML = "";
 
     characters.forEach(c => {
+      let letter = c.name[0].toUpperCase();
+
       charList.innerHTML += `
         <div class="charItem">
-          <img src="${c.avatar}">
+          <div class="avatarLetter">${letter}</div>
           <b>${c.name}</b> (${c.role})
         </div>
       `;
@@ -172,8 +164,8 @@
   /* ---------- Сохранение истории ---------- */
 
   function saveStory() {
-    let title = document.getElementById("title").value.trim();
-    let desc = document.getElementById("desc").value.trim();
+    let title = title.value.trim();
+    let desc = desc.value.trim();
 
     if (!title || !desc) {
       alert("Заполни название и описание!");
@@ -198,7 +190,7 @@
 
     alert("✅ История сохранена!");
 
-    /* Очистка формы */
+    /* Очистка */
     document.getElementById("title").value = "";
     document.getElementById("desc").value = "";
     characters = [];
@@ -207,7 +199,7 @@
     renderStories();
   }
 
-  /* ---------- Играть ---------- */
+  /* ---------- Запуск ---------- */
 
   function startStory(id) {
     localStorage.setItem("currentStoryId", id);
@@ -217,6 +209,7 @@
   function deleteStory(id) {
     let stories = JSON.parse(localStorage.getItem("stories")) || [];
     stories = stories.filter(s => s.id !== id);
+
     localStorage.setItem("stories", JSON.stringify(stories));
     renderStories();
   }
