@@ -2,50 +2,58 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Chat Story Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Панель автора</title>
+
   <style>
     body {
       margin: 0;
       font-family: Arial;
-      background: #06121f;
+      background: linear-gradient(#050d18, #061c30);
       color: white;
-      padding: 20px;
+      padding: 15px;
     }
 
     h1 {
       text-align: center;
+      font-size: 22px;
       margin-bottom: 20px;
     }
 
     .box {
-      background: #101c2c;
-      padding: 20px;
-      border-radius: 20px;
-      margin-bottom: 20px;
+      background: rgba(255,255,255,0.05);
+      padding: 15px;
+      border-radius: 18px;
+      margin-bottom: 18px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
     }
 
     input, textarea {
       width: 100%;
-      padding: 12px;
-      border-radius: 12px;
+      padding: 14px;
+      border-radius: 14px;
       border: none;
       margin-top: 10px;
       font-size: 16px;
+      outline: none;
+      background: rgba(255,255,255,0.08);
+      color: white;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: none;
     }
 
     button {
-      margin-top: 15px;
-      padding: 12px;
       width: 100%;
+      padding: 14px;
+      margin-top: 12px;
       border: none;
-      border-radius: 15px;
-      font-size: 18px;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: bold;
       cursor: pointer;
-    }
-
-    .save {
-      background: #1e90ff;
-      color: white;
     }
 
     .add {
@@ -53,38 +61,68 @@
       color: white;
     }
 
-    .story {
-      padding: 15px;
-      border-radius: 15px;
-      background: #1b2a3d;
+    .save {
+      background: #2196f3;
+      color: white;
+    }
+
+    .storyCard {
+      background: rgba(255,255,255,0.07);
+      padding: 14px;
+      border-radius: 16px;
       margin-top: 15px;
     }
 
-    .start {
+    .storyCard h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .storyCard p {
+      font-size: 14px;
+      opacity: 0.8;
+      margin-top: 6px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .startBtn {
+      flex: 1;
       background: crimson;
       color: white;
     }
 
+    .deleteBtn {
+      width: 55px;
+      background: #333;
+      color: white;
+      font-size: 20px;
+    }
+
     .char {
       font-size: 14px;
-      margin-top: 5px;
-      opacity: 0.8;
+      margin-top: 6px;
+      opacity: 0.75;
     }
   </style>
 </head>
 <body>
 
-<h1>📖 Панель автора</h1>
+<h1>📚 Панель автора</h1>
 
 <div class="box">
-  <h2>Создать историю</h2>
+  <h2 style="font-size:18px;">Создать историю</h2>
 
   <input id="title" placeholder="Название истории">
-  <textarea id="desc" placeholder="Описание сюжета для ИИ"></textarea>
+  <textarea id="desc" placeholder="Описание сюжета"></textarea>
 
-  <h3>Персонажи</h3>
+  <h3 style="margin-top:15px;">Персонажи</h3>
   <input id="charName" placeholder="Имя персонажа">
-  <input id="charRole" placeholder="Роль (друг, сестра, враг...)">
+  <input id="charRole" placeholder="Роль (мама, друг...)">
 
   <button class="add" onclick="addCharacter()">➕ Добавить персонажа</button>
 
@@ -94,7 +132,7 @@
 </div>
 
 <div class="box">
-  <h2>Ваши истории</h2>
+  <h2 style="font-size:18px;">Ваши истории</h2>
   <div id="stories"></div>
 </div>
 
@@ -119,10 +157,8 @@
     const list = document.getElementById("charList");
     list.innerHTML = "";
 
-    characters.forEach((c, i) => {
-      list.innerHTML += `
-        <div class="char">👤 ${c.name} — ${c.role}</div>
-      `;
+    characters.forEach(c => {
+      list.innerHTML += `<div class="char">👤 ${c.name} — ${c.role}</div>`;
     });
   }
 
@@ -130,7 +166,7 @@
     const title = document.getElementById("title").value.trim();
     const desc = document.getElementById("desc").value.trim();
 
-    if (!title || !desc) return alert("Заполни название и описание");
+    if (!title || !desc) return alert("Заполни всё!");
 
     const story = {
       id: Date.now(),
@@ -151,6 +187,19 @@
     alert("История сохранена!");
   }
 
+  function deleteStory(id) {
+    let stories = JSON.parse(localStorage.getItem("stories")) || [];
+    stories = stories.filter(s => s.id !== id);
+
+    localStorage.setItem("stories", JSON.stringify(stories));
+    loadStories();
+  }
+
+  function startStory(id) {
+    localStorage.setItem("currentStoryId", id);
+    window.location.href = "play.html";
+  }
+
   function loadStories() {
     const storiesDiv = document.getElementById("stories");
     storiesDiv.innerHTML = "";
@@ -159,18 +208,17 @@
 
     stories.forEach(story => {
       storiesDiv.innerHTML += `
-        <div class="story">
+        <div class="storyCard">
           <h3>${story.title}</h3>
           <p>${story.desc}</p>
-          <button class="start" onclick="startStory(${story.id})">▶ Начать</button>
+
+          <div class="row">
+            <button class="startBtn" onclick="startStory(${story.id})">▶ Играть</button>
+            <button class="deleteBtn" onclick="deleteStory(${story.id})">🗑</button>
+          </div>
         </div>
       `;
     });
-  }
-
-  function startStory(id) {
-    localStorage.setItem("currentStoryId", id);
-    window.location.href = "play.html";
   }
 
   loadStories();
