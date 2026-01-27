@@ -2,72 +2,84 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>История</title>
+
   <style>
     body {
       margin: 0;
-      background: #06121f;
-      color: white;
       font-family: Arial;
+      background: linear-gradient(#050d18, #061c30);
+      color: white;
       display: flex;
       flex-direction: column;
       height: 100vh;
     }
 
-    h2 {
-      text-align: center;
+    header {
       padding: 15px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      background: rgba(255,255,255,0.05);
     }
 
     #chat {
       flex: 1;
       overflow-y: auto;
       padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    .msg {
-      max-width: 75%;
-      padding: 12px;
-      border-radius: 15px;
-      margin-bottom: 15px;
+    .bubble {
+      max-width: 80%;
+      padding: 12px 14px;
+      border-radius: 16px;
+      font-size: 15px;
+      line-height: 1.4;
       white-space: pre-wrap;
     }
 
     .user {
+      align-self: flex-end;
       background: #1e90ff;
-      margin-left: auto;
+      border-bottom-right-radius: 6px;
     }
 
     .bot {
-      background: #1b2a3d;
-      margin-right: auto;
+      align-self: flex-start;
+      background: rgba(255,255,255,0.08);
+      border-bottom-left-radius: 6px;
     }
 
     .name {
-      font-size: 13px;
+      font-size: 12px;
       opacity: 0.7;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
 
-    #inputBox {
+    footer {
       display: flex;
       padding: 10px;
-      background: #0c1a2a;
+      background: rgba(0,0,0,0.3);
     }
 
     input {
       flex: 1;
-      padding: 12px;
-      border-radius: 15px;
+      padding: 14px;
+      border-radius: 14px;
       border: none;
       font-size: 16px;
+      outline: none;
     }
 
     button {
       margin-left: 10px;
-      padding: 12px 18px;
+      padding: 14px 18px;
       border: none;
-      border-radius: 15px;
+      border-radius: 14px;
       background: limegreen;
       font-size: 18px;
       cursor: pointer;
@@ -76,25 +88,23 @@
 </head>
 <body>
 
-<h2 id="title">История</h2>
+<header id="title">История</header>
 
 <div id="chat"></div>
 
-<div id="inputBox">
-  <input id="text" placeholder="Напиши сообщение...">
+<footer>
+  <input id="text" placeholder="Сообщение...">
   <button onclick="send()">▶</button>
-</div>
+</footer>
 
 <script>
   const API = "https://chat-horror-api.onrender.com/chat";
-
   const chat = document.getElementById("chat");
 
   let stories = JSON.parse(localStorage.getItem("stories")) || [];
   let id = localStorage.getItem("currentStoryId");
 
   let story = stories.find(s => s.id == id);
-
   document.getElementById("title").innerText = story.title;
 
   let charactersText = story.characters.map(c =>
@@ -103,7 +113,7 @@
 
   function addMessage(name, text, cls) {
     chat.innerHTML += `
-      <div class="msg ${cls}">
+      <div class="bubble ${cls}">
         <div class="name">${name}</div>
         ${text}
       </div>
@@ -111,7 +121,6 @@
     chat.scrollTop = chat.scrollHeight;
   }
 
-  // ✅ Старт истории автоматически
   async function startIntro() {
     addMessage("Система", "История начинается...", "bot");
 
@@ -119,19 +128,16 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: "Начни историю первым сообщением как рассказчик.",
+        message: "Начни историю вступлением как рассказчик.",
         story: `
 Сюжет: ${story.desc}
-
 Персонажи: ${charactersText}
-
-Пиши вступление красиво и атмосферно.
 `
       })
     });
 
     const data = await res.json();
-    addMessage("Персонаж", data.reply, "bot");
+    addMessage("Рассказчик", data.reply, "bot");
   }
 
   startIntro();
@@ -150,17 +156,13 @@
         message: text,
         story: `
 Сюжет: ${story.desc}
-
 Персонажи: ${charactersText}
-
-Отвечай как один из персонажей.
-Если подходит — меняй говорящего.
+Отвечай от подходящего персонажа.
 `
       })
     });
 
     const data = await res.json();
-
     addMessage("Персонаж", data.reply, "bot");
   }
 </script>
