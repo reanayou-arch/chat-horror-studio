@@ -3,63 +3,64 @@ import cors from "cors";
 import Groq from "groq-sdk";
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-
-const MODEL = "llama-3.1-8b-instant"; 
-// ✅ Эта модель точно работает сейчас
-
+/* ✅ Главная проверка сервера */
 app.get("/", (req, res) => {
-  res.send("Groq API работает!");
+  res.send("✅ Сервер работает нормально!");
 });
 
+/* ✅ Чтобы /chat не показывал Not Found */
+app.get("/chat", (req, res) => {
+  res.send("✅ /chat работает! Используй POST запрос для общения.");
+});
+
+/* ✅ Groq API */
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY
+});
+
+/* ✅ Основной чат */
 app.post("/chat", async (req, res) => {
   try {
-    const { message, story } = req.body;
+    const userMessage = req.body.message;
 
-    if (!message) {
+    if (!userMessage) {
       return res.status(400).json({
-        reply: "Нет сообщения",
+        reply: "❌ Нет сообщения!"
       });
     }
 
-    const systemPrompt = `
-Ты — рассказчик хоррор-истории.
-
-История:
-${story || "Без описания"}
-
-Начни сюжет первым сообщением, если игрок только вошёл.
-Отвечай атмосферно и подробно.
-`;
-
     const completion = await groq.chat.completions.create({
-      model: MODEL,
+      model: "llama-3.1-8b-instant",
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: message },
+        {
+          role: "system",
+          content:
+            "Ты пишешь короткими репликами как в Telegram. Отвечают разные персонажи."
+        },
+        { role: "user", content: userMessage }
       ],
+      temperature: 0.8,
+      max_tokens: 200
     });
 
-    const reply =
-      completion.choices?.[0]?.message?.content ||
-      "Нет ответа от Groq";
+    res.json({
+      reply: completion.choices[0].message.content
+    });
 
-    res.json({ reply });
   } catch (err) {
-    console.error("🔥 Ошибка Groq:", err);
+    console.error("🔥 Groq Error FULL:", err);
 
     res.status(500).json({
-      reply: "Ошибка Groq API. Проверь ключ и модель.",
+      reply: "❌ Ошибка Groq API. Проверь ключ и модель."
     });
   }
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log("✅ Groq Server running on port", PORT);
+/* ✅ Запуск */
+app.listen(10000, () => {
+  console.log("✅ Groq Server running on port 10000");
 });
