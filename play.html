@@ -9,75 +9,79 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #0b1220;
+      background: linear-gradient(to bottom, #06121f, #02070c);
       color: white;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
     }
 
     header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       padding: 15px;
-      text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-      background: rgba(255,255,255,0.05);
-      position: relative;
     }
 
     .back-btn {
-      position: absolute;
-      left: 10px;
-      top: 10px;
-      background: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.08);
       border: none;
       color: white;
-      padding: 8px 12px;
-      border-radius: 12px;
+      padding: 10px 16px;
+      border-radius: 14px;
+      font-size: 16px;
       cursor: pointer;
-      font-size: 14px;
     }
 
-    .chat {
+    .title {
       flex: 1;
-      overflow-y: auto;
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    #chat {
       padding: 15px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
+      padding-bottom: 90px;
     }
 
     .msg {
-      max-width: 80%;
-      padding: 12px 14px;
+      max-width: 78%;
+      padding: 14px;
       border-radius: 18px;
-      font-size: 15px;
+      background: rgba(255,255,255,0.06);
+      font-size: 16px;
       line-height: 1.4;
       word-wrap: break-word;
     }
 
-    .ai {
-      align-self: flex-start;
-      background: rgba(255,255,255,0.08);
+    .msg.you {
+      align-self: flex-end;
+      background: #1e6eff;
+      border-bottom-right-radius: 6px;
     }
 
-    .user {
-      align-self: flex-end;
-      background: #2563eb;
-      color: white;
+    .msg.ai {
+      align-self: flex-start;
+      border-bottom-left-radius: 6px;
     }
 
     .name {
-      font-size: 12px;
+      font-size: 13px;
       opacity: 0.6;
-      margin-bottom: 4px;
+      margin-bottom: 5px;
     }
 
-    footer {
-      display: flex;
+    .input-box {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(10px);
       padding: 12px;
+      display: flex;
       gap: 10px;
-      background: rgba(255,255,255,0.05);
     }
 
     input {
@@ -85,17 +89,19 @@
       padding: 14px;
       border-radius: 18px;
       border: none;
-      font-size: 15px;
+      font-size: 16px;
       outline: none;
     }
 
     button.send {
-      background: #22c55e;
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
       border: none;
-      padding: 0 18px;
-      border-radius: 18px;
-      font-size: 18px;
+      font-size: 20px;
       cursor: pointer;
+      background: #22c55e;
+      color: black;
     }
   </style>
 </head>
@@ -103,45 +109,42 @@
 <body>
 
 <header>
-  <button class="back-btn" onclick="goBack()">⬅ Назад</button>
-  <span id="storyTitle">История</span>
+  <button class="back-btn" onclick="goBack()">← Назад</button>
+  <div class="title" id="storyTitle">История</div>
 </header>
 
-<div class="chat" id="chat"></div>
+<div id="chat"></div>
 
-<footer>
-  <input id="input" placeholder="Сообщение...">
-  <button class="send" onclick="sendMsg()">➤</button>
-</footer>
+<div class="input-box">
+  <input id="text" placeholder="Сообщение..." autocomplete="off">
+  <button class="send" onclick="send()">➤</button>
+</div>
 
 <script>
+  const API_URL = "https://chat-horror-api.onrender.com/chat";
+
   const chat = document.getElementById("chat");
-  const input = document.getElementById("input");
+  const input = document.getElementById("text");
 
-  // Назад в меню
-  function goBack() {
-    window.location.href = "index.html";
-  }
-
-  // Получаем активную историю
-  const activeId = localStorage.getItem("activeStory");
-  const stories = JSON.parse(localStorage.getItem("stories")) || [];
-  const story = stories.find(s => s.id == activeId);
+  let story = JSON.parse(localStorage.getItem("currentStory"));
 
   if (!story) {
     alert("История не найдена!");
-    window.location.href = "index.html";
+    location.href = "index.html";
   }
 
   document.getElementById("storyTitle").innerText = story.title;
 
-  // Показ сообщения
-  function addMessage(sender, text, type) {
+  // --- Персонажи
+  let characters = story.characters || [];
+
+  // --- Добавление сообщений
+  function addMessage(name, text, type) {
     const div = document.createElement("div");
     div.className = "msg " + type;
 
     div.innerHTML = `
-      <div class="name">${sender}</div>
+      <div class="name">${name}</div>
       ${text}
     `;
 
@@ -149,69 +152,80 @@
     chat.scrollTop = chat.scrollHeight;
   }
 
-  // Первый старт истории
+  // --- Начало истории
   addMessage("Система", "История начинается...", "ai");
 
-  setTimeout(() => {
-    addMessage(
-      story.characters[0].name,
-      "Привет... Всё начинается прямо сейчас.",
-      "ai"
-    );
-  }, 600);
+  if (story.description) {
+    addMessage("Персонаж", story.description, "ai");
+  }
 
-  // Отправка игрока
-  async function sendMsg() {
+  // --- Назад
+  function goBack() {
+    location.href = "index.html";
+  }
+
+  // --- Отправка игрока
+  async function send() {
     const text = input.value.trim();
     if (!text) return;
 
-    addMessage("Вы", text, "user");
+    addMessage("Вы", text, "you");
     input.value = "";
 
-    // AI отвечает коротко
     await aiReply(text);
   }
 
-  // Ответ AI (несколько персонажей)
+  // --- AI ответ
   async function aiReply(userText) {
 
-    const chars = story.characters;
+    // если слишком коротко
+    if (userText.length < 2) {
+      addMessage("Персонаж", "Скажи чуть подробнее…", "ai");
+      return;
+    }
 
-    // случайный персонаж отвечает
-    const speaker = chars[Math.floor(Math.random() * chars.length)];
+    let speaker = characters[Math.floor(Math.random() * characters.length)];
 
-    // Промпт строго по ролям
-    const prompt = `
-Ты хоррор-чат история.
-Персонаж: ${speaker.name} (${speaker.role})
-
-Игрок написал: "${userText}"
-
-Ответь КОРОТКО (1-2 предложения).
-Строго в характере роли.
-`;
+    if (!speaker) {
+      speaker = { name: "Персонаж", role: "участник истории" };
+    }
 
     try {
-      const res = await fetch("https://chat-horror-api.onrender.com/chat", {
+      const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify({
+          message: userText,
+          story: story.description,
+          character: speaker
+        })
       });
 
       const data = await res.json();
 
-      addMessage(speaker.name, data.reply, "ai");
+      let answer = data.reply;
+
+      // ✅ FIX: никогда не будет undefined
+      if (!answer || answer.trim() === "") {
+        answer = "…";
+      }
+
+      // короткие ответы как Telegram
+      if (answer.length > 250) {
+        answer = answer.slice(0, 250) + "...";
+      }
+
+      addMessage(speaker.name, answer, "ai");
 
     } catch (err) {
-      addMessage("Ошибка", "Сервер недоступен...", "ai");
+      addMessage("Ошибка", "❌ Сервер недоступен", "ai");
     }
   }
 
   // Enter = отправка
-  input.addEventListener("keydown", e => {
-    if (e.key === "Enter") sendMsg();
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") send();
   });
-
 </script>
 
 </body>
