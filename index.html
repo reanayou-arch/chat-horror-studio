@@ -13,19 +13,16 @@
       color: white;
     }
 
-    .container {
-      max-width: 420px;
-      margin: auto;
-      padding: 20px;
-    }
-
     h1 {
       text-align: center;
-      margin-bottom: 20px;
+      margin: 20px;
     }
 
-    .card {
-      background: rgba(255,255,255,0.07);
+    .box {
+      width: 90%;
+      max-width: 500px;
+      margin: auto;
+      background: #141c2c;
       padding: 20px;
       border-radius: 20px;
       margin-bottom: 20px;
@@ -34,134 +31,191 @@
     input, textarea {
       width: 100%;
       padding: 12px;
-      margin-top: 10px;
       border-radius: 12px;
       border: none;
+      margin: 8px 0;
       font-size: 16px;
     }
 
     button {
       width: 100%;
-      padding: 14px;
-      margin-top: 15px;
+      padding: 15px;
       border: none;
-      border-radius: 14px;
+      border-radius: 15px;
+      margin-top: 10px;
       font-size: 18px;
       cursor: pointer;
     }
 
-    .green { background: #00c853; color: white; }
-    .blue  { background: #2979ff; color: white; }
-    .red   { background: #ff1744; color: white; }
+    .green { background: limegreen; }
+    .blue { background: dodgerblue; }
+    .red { background: crimson; }
 
-    .story {
+    .charCard {
+      display: flex;
+      align-items: center;
+      background: #222;
+      padding: 10px;
+      border-radius: 15px;
+      margin-top: 10px;
+    }
+
+    .charCard img {
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      margin-right: 10px;
+      object-fit: cover;
+    }
+
+    .storyCard {
+      background: #222;
       padding: 15px;
       border-radius: 15px;
-      background: rgba(255,255,255,0.05);
       margin-top: 15px;
     }
 
-    .story-title {
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    .story-desc {
-      opacity: 0.7;
-      margin-top: 5px;
-    }
-
-    .play-btn {
+    .storyCard button {
       margin-top: 10px;
-      background: #ff1744;
-      color: white;
-      border-radius: 12px;
-      padding: 10px;
-      width: 100%;
-      border: none;
-      cursor: pointer;
+      background: crimson;
     }
   </style>
 </head>
 
 <body>
-<div class="container">
 
-  <h1>📖 Chat Story Studio</h1>
+<h1>📖 Chat Story Studio</h1>
 
-  <!-- СОЗДАНИЕ ИСТОРИИ -->
-  <div class="card">
-    <h2>Создать историю</h2>
+<div class="box">
+  <h2>Создать историю</h2>
 
-    <input id="title" placeholder="Название истории">
-    <textarea id="plot" placeholder="Описание сюжета для ИИ"></textarea>
+  <input id="title" placeholder="Название истории">
+  <textarea id="desc" placeholder="Описание сюжета (для ИИ)"></textarea>
 
-    <button class="blue" onclick="saveStory()">💾 Сохранить историю</button>
-  </div>
+  <h3>Добавить персонажа</h3>
+  <input id="charName" placeholder="Имя персонажа">
+  <input id="charRole" placeholder="Роль (мама, друг...)">
+  <input id="charMood" placeholder="Характер (добрый, злой...)">
+  <input id="charAvatar" type="file">
 
-  <!-- СПИСОК ИСТОРИЙ -->
-  <div class="card">
-    <h2>Ваши истории</h2>
-    <div id="storyList"></div>
-  </div>
+  <button class="green" onclick="addCharacter()">+ Добавить персонажа</button>
 
+  <div id="charList"></div>
+
+  <button class="blue" onclick="saveStory()">💾 Сохранить историю</button>
+</div>
+
+<div class="box">
+  <h2>Ваши истории</h2>
+  <div id="stories"></div>
 </div>
 
 <script>
-  let stories = JSON.parse(localStorage.getItem("stories") || "[]");
+let characters = [];
 
-  function renderStories() {
-    const list = document.getElementById("storyList");
+function addCharacter() {
+  const name = document.getElementById("charName").value.trim();
+  const role = document.getElementById("charRole").value.trim();
+  const mood = document.getElementById("charMood").value.trim();
+  const file = document.getElementById("charAvatar").files[0];
 
-    if (stories.length === 0) {
-      list.innerHTML = "<p>Историй пока нет</p>";
-      return;
-    }
+  if (!name || !role || !mood) {
+    alert("Заполни все поля персонажа!");
+    return;
+  }
 
-    list.innerHTML = "";
+  const reader = new FileReader();
+  reader.onload = function () {
+    characters.push({
+      name, role, mood,
+      avatar: reader.result
+    });
+    renderCharacters();
+  };
 
-    stories.forEach((s, index) => {
-      list.innerHTML += `
-        <div class="story">
-          <div class="story-title">${s.title}</div>
-          <div class="story-desc">${s.plot}</div>
-          <button class="play-btn" onclick="startStory(${index})">
-            ▶ Начать
-          </button>
+  if (file) reader.readAsDataURL(file);
+  else {
+    characters.push({ name, role, mood, avatar: "" });
+    renderCharacters();
+  }
+
+  document.getElementById("charName").value = "";
+  document.getElementById("charRole").value = "";
+  document.getElementById("charMood").value = "";
+}
+
+function renderCharacters() {
+  const list = document.getElementById("charList");
+  list.innerHTML = "";
+
+  characters.forEach(c => {
+    list.innerHTML += `
+      <div class="charCard">
+        <img src="${c.avatar || 'https://via.placeholder.com/55'}">
+        <div>
+          <b>${c.name}</b><br>
+          ${c.role} • ${c.mood}
         </div>
-      `;
-    });
+      </div>
+    `;
+  });
+}
+
+function saveStory() {
+  const title = document.getElementById("title").value.trim();
+  const desc = document.getElementById("desc").value.trim();
+
+  if (!title || !desc) {
+    alert("Введите название и описание!");
+    return;
   }
 
-  function saveStory() {
-    const title = document.getElementById("title").value.trim();
-    const plot = document.getElementById("plot").value.trim();
+  const stories = JSON.parse(localStorage.getItem("stories") || "[]");
 
-    if (!title || !plot) {
-      alert("Заполни название и сюжет!");
-      return;
-    }
+  stories.push({
+    id: Date.now(),
+    title,
+    desc,
+    characters
+  });
 
-    stories.push({
-      title,
-      plot
-    });
+  localStorage.setItem("stories", JSON.stringify(stories));
 
-    localStorage.setItem("stories", JSON.stringify(stories));
+  alert("История сохранена!");
 
-    document.getElementById("title").value = "";
-    document.getElementById("plot").value = "";
-
-    renderStories();
-    alert("История сохранена!");
-  }
-
-  function startStory(index) {
-    localStorage.setItem("currentStory", index);
-    location.href = "chat.html";
-  }
+  characters = [];
+  renderCharacters();
+  document.getElementById("title").value = "";
+  document.getElementById("desc").value = "";
 
   renderStories();
+}
+
+function renderStories() {
+  const stories = JSON.parse(localStorage.getItem("stories") || "[]");
+  const box = document.getElementById("stories");
+  box.innerHTML = "";
+
+  stories.forEach(s => {
+    box.innerHTML += `
+      <div class="storyCard">
+        <b>${s.title}</b><br>
+        <small>${s.desc}</small><br>
+        <button onclick="startStory(${s.id})">▶ Начать</button>
+      </div>
+    `;
+  });
+}
+
+function startStory(id) {
+  const stories = JSON.parse(localStorage.getItem("stories") || "[]");
+  const story = stories.find(x => x.id === id);
+
+  localStorage.setItem("currentStory", JSON.stringify(story));
+  location.href = "play.html";
+}
+
+renderStories();
 </script>
 
 </body>
