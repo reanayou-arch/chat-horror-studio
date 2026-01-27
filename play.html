@@ -3,70 +3,68 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Story Chat</title>
+  <title>Игра</title>
 
   <style>
     body {
       margin: 0;
-      font-family: Arial;
-      background: linear-gradient(#050d18, #061c30);
+      font-family: Arial, sans-serif;
+      background: #0b1220;
+      color: white;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      color: white;
     }
 
     header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px;
+      padding: 15px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
       background: rgba(255,255,255,0.05);
+      position: relative;
     }
 
-    header button {
-      background: none;
+    .back-btn {
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      background: rgba(255,255,255,0.1);
       border: none;
       color: white;
-      font-size: 20px;
+      padding: 8px 12px;
+      border-radius: 12px;
       cursor: pointer;
+      font-size: 14px;
     }
 
-    header span {
-      font-weight: bold;
-      font-size: 17px;
-    }
-
-    #chat {
+    .chat {
       flex: 1;
       overflow-y: auto;
-      padding: 14px;
+      padding: 15px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
     }
 
-    .msgRow {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      max-width: 90%;
-    }
-
-    .avatar {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      object-fit: cover;
-      flex-shrink: 0;
-    }
-
-    .bubble {
+    .msg {
+      max-width: 80%;
       padding: 12px 14px;
       border-radius: 18px;
-      background: rgba(255,255,255,0.10);
-      display: flex;
-      flex-direction: column;
+      font-size: 15px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+
+    .ai {
+      align-self: flex-start;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .user {
+      align-self: flex-end;
+      background: #2563eb;
+      color: white;
     }
 
     .name {
@@ -75,37 +73,29 @@
       margin-bottom: 4px;
     }
 
-    .userRow {
-      align-self: flex-end;
-      flex-direction: row-reverse;
-    }
-
-    .userRow .bubble {
-      background: dodgerblue;
-    }
-
     footer {
       display: flex;
-      padding: 10px;
-      background: rgba(0,0,0,0.35);
+      padding: 12px;
+      gap: 10px;
+      background: rgba(255,255,255,0.05);
     }
 
     input {
       flex: 1;
       padding: 14px;
-      font-size: 16px;
+      border-radius: 18px;
       border: none;
-      border-radius: 16px;
+      font-size: 15px;
       outline: none;
     }
 
     button.send {
-      width: 60px;
-      margin-left: 10px;
+      background: #22c55e;
       border: none;
-      border-radius: 16px;
-      background: limegreen;
-      font-size: 20px;
+      padding: 0 18px;
+      border-radius: 18px;
+      font-size: 18px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -113,156 +103,115 @@
 <body>
 
 <header>
-  <button onclick="goBack()">⬅</button>
-  <span id="title"></span>
+  <button class="back-btn" onclick="goBack()">⬅ Назад</button>
+  <span id="storyTitle">История</span>
 </header>
 
-<div id="chat"></div>
+<div class="chat" id="chat"></div>
 
 <footer>
-  <input id="text" placeholder="Сообщение...">
-  <button class="send" onclick="send()">▶</button>
+  <input id="input" placeholder="Сообщение...">
+  <button class="send" onclick="sendMsg()">➤</button>
 </footer>
 
 <script>
-  const API = "https://chat-horror-api.onrender.com/chat";
   const chat = document.getElementById("chat");
+  const input = document.getElementById("input");
 
-  let stories = JSON.parse(localStorage.getItem("stories")) || [];
-  let id = localStorage.getItem("currentStoryId");
-  let story = stories.find(s => s.id == id);
-
-  document.getElementById("title").innerText = story.title;
-
-  let characters = story.characters;
-
-  // ✅ история переписки
-  let chatKey = "chat_" + id;
-  let savedChat = JSON.parse(localStorage.getItem(chatKey)) || [];
-
-  function saveChat() {
-    localStorage.setItem(chatKey, JSON.stringify(savedChat));
-  }
-
-  function getAvatar(name) {
-    let c = characters.find(x => x.name === name);
-    return c ? c.avatar : "";
-  }
-
-  function addMessage(name, text, isUser=false) {
-    let row = document.createElement("div");
-    row.className = "msgRow";
-    if (isUser) row.classList.add("userRow");
-
-    let img = document.createElement("img");
-    img.className = "avatar";
-    img.src = isUser
-      ? "https://cdn-icons-png.flaticon.com/512/149/149071.png"
-      : getAvatar(name);
-
-    let bubble = document.createElement("div");
-    bubble.className = "bubble";
-    bubble.innerHTML = `
-      <div class="name">${name}</div>
-      <div>${text}</div>
-    `;
-
-    row.appendChild(img);
-    row.appendChild(bubble);
-    chat.appendChild(row);
-
-    chat.scrollTop = chat.scrollHeight;
-
-    savedChat.push({ name, text, isUser });
-    saveChat();
-  }
-
-  function splitReply(reply) {
-    let lines = reply.split("\n").filter(x => x.trim() !== "");
-    let result = [];
-
-    for (let line of lines) {
-      if (line.includes(":")) {
-        let [n, ...t] = line.split(":");
-        result.push({ name: n.trim(), text: t.join(":").trim() });
-      }
-    }
-
-    return result.length ? result : [{ name: "Персонаж", text: reply }];
-  }
-
-  async function intro() {
-    if (savedChat.length > 0) return;
-
-    let res = await fetch(API, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        message: "Начни историю.",
-        story: `
-СЮЖЕТ:
-${story.desc}
-
-Персонажи:
-${characters.map(c => c.name+" — "+c.role).join("\n")}
-
-Пиши коротко как Telegram.
-Формат:
-Имя: реплика
-Имя: реплика
-`
-      })
-    });
-
-    let data = await res.json();
-    splitReply(data.reply).forEach(m =>
-      addMessage(m.name, m.text)
-    );
-  }
-
-  async function send() {
-    let text = document.getElementById("text").value.trim();
-    if (!text) return;
-
-    addMessage("Вы", text, true);
-    document.getElementById("text").value = "";
-
-    let res = await fetch(API, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        message: text,
-        story: `
-СЮЖЕТ:
-${story.desc}
-
-Персонажи:
-${characters.map(c => c.name+" — "+c.role).join("\n")}
-
-Отвечай строго короткими репликами.
-Формат:
-Имя: реплика
-Имя: реплика
-`
-      })
-    });
-
-    let data = await res.json();
-    splitReply(data.reply).forEach(m =>
-      addMessage(m.name, m.text)
-    );
-  }
-
+  // Назад в меню
   function goBack() {
     window.location.href = "index.html";
   }
 
-  // ✅ восстановление переписки
-  savedChat.forEach(m =>
-    addMessage(m.name, m.text, m.isUser)
-  );
+  // Получаем активную историю
+  const activeId = localStorage.getItem("activeStory");
+  const stories = JSON.parse(localStorage.getItem("stories")) || [];
+  const story = stories.find(s => s.id == activeId);
 
-  intro();
+  if (!story) {
+    alert("История не найдена!");
+    window.location.href = "index.html";
+  }
+
+  document.getElementById("storyTitle").innerText = story.title;
+
+  // Показ сообщения
+  function addMessage(sender, text, type) {
+    const div = document.createElement("div");
+    div.className = "msg " + type;
+
+    div.innerHTML = `
+      <div class="name">${sender}</div>
+      ${text}
+    `;
+
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  // Первый старт истории
+  addMessage("Система", "История начинается...", "ai");
+
+  setTimeout(() => {
+    addMessage(
+      story.characters[0].name,
+      "Привет... Всё начинается прямо сейчас.",
+      "ai"
+    );
+  }, 600);
+
+  // Отправка игрока
+  async function sendMsg() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMessage("Вы", text, "user");
+    input.value = "";
+
+    // AI отвечает коротко
+    await aiReply(text);
+  }
+
+  // Ответ AI (несколько персонажей)
+  async function aiReply(userText) {
+
+    const chars = story.characters;
+
+    // случайный персонаж отвечает
+    const speaker = chars[Math.floor(Math.random() * chars.length)];
+
+    // Промпт строго по ролям
+    const prompt = `
+Ты хоррор-чат история.
+Персонаж: ${speaker.name} (${speaker.role})
+
+Игрок написал: "${userText}"
+
+Ответь КОРОТКО (1-2 предложения).
+Строго в характере роли.
+`;
+
+    try {
+      const res = await fetch("https://chat-horror-api.onrender.com/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt })
+      });
+
+      const data = await res.json();
+
+      addMessage(speaker.name, data.reply, "ai");
+
+    } catch (err) {
+      addMessage("Ошибка", "Сервер недоступен...", "ai");
+    }
+  }
+
+  // Enter = отправка
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") sendMsg();
+  });
+
 </script>
 
 </body>
