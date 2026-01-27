@@ -44,7 +44,7 @@
       display: flex;
       align-items: flex-end;
       gap: 10px;
-      max-width: 80%;
+      max-width: 85%;
     }
 
     .avatar {
@@ -57,14 +57,21 @@
       justify-content: center;
       font-weight: bold;
       font-size: 18px;
+      flex-shrink: 0;
     }
 
     .bubble {
-      background: rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.07);
       padding: 12px 14px;
       border-radius: 18px;
       font-size: 16px;
       line-height: 1.3;
+    }
+
+    .name {
+      font-size: 13px;
+      opacity: 0.6;
+      margin-bottom: 4px;
     }
 
     .you {
@@ -83,7 +90,7 @@
       display: flex;
       gap: 10px;
       padding: 12px;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.85);
     }
 
     input {
@@ -123,16 +130,29 @@
   const chat = document.getElementById("chat");
   const input = document.getElementById("userInput");
 
-  const storyData = JSON.parse(localStorage.getItem("currentStory"));
+  /* ✅ Загружаем историю */
+  let storyData = null;
+
+  try {
+    storyData = JSON.parse(localStorage.getItem("currentStory"));
+  } catch {
+    storyData = null;
+  }
 
   if (!storyData) {
-    alert("История не найдена!");
+    alert("❌ История не найдена!");
     location.href = "index.html";
   }
 
+  /* ✅ Защита от undefined */
+  storyData.title = storyData.title || "Без названия";
+  storyData.description = storyData.description || "Хоррор история.";
+  storyData.characters = storyData.characters || [];
+
   document.getElementById("storyTitle").innerText = storyData.title;
 
-  function addMessage(name, text, isYou=false) {
+  /* ✅ Сообщение */
+  function addMessage(name, text, isYou = false) {
     const msg = document.createElement("div");
     msg.className = "msg" + (isYou ? " you" : "");
 
@@ -142,7 +162,16 @@
 
     const bubble = document.createElement("div");
     bubble.className = "bubble";
-    bubble.innerText = text;
+
+    const label = document.createElement("div");
+    label.className = "name";
+    label.innerText = name;
+
+    const content = document.createElement("div");
+    content.innerText = text;
+
+    bubble.appendChild(label);
+    bubble.appendChild(content);
 
     msg.appendChild(avatar);
     msg.appendChild(bubble);
@@ -153,9 +182,15 @@
 
   /* ✅ Старт истории */
   addMessage("Система", "История начинается...");
-  addMessage(storyData.characters[0]?.name || "Персонаж",
-    "Я чувствую... здесь что-то не так.");
 
+  setTimeout(() => {
+    addMessage(
+      "Система",
+      "Ты оказываешься внутри событий. Напиши первое сообщение..."
+    );
+  }, 600);
+
+  /* ✅ Отправка игрока */
   async function sendMessage() {
     const text = input.value.trim();
     if (!text) return;
@@ -166,7 +201,7 @@
     try {
       const res = await fetch("https://chat-horror-api.onrender.com/chat", {
         method: "POST",
-        headers: {"Content-Type":"application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
           story: storyData.description,
@@ -176,23 +211,27 @@
 
       const data = await res.json();
 
-      if (data.reply) {
-        const lines = data.reply.split("\n");
-
-        lines.forEach(line => {
-          if (line.includes(":")) {
-            const parts = line.split(":");
-            const name = parts[0].trim();
-            const msg = parts.slice(1).join(":").trim();
-            addMessage(name, msg);
-          } else if (line.startsWith("(")) {
-            addMessage("Система", line);
-          }
-        });
+      if (!data.reply) {
+        addMessage("Система", "❌ AI не дал ответа");
+        return;
       }
 
+      /* ✅ Парсим ответ */
+      const lines = data.reply.split("\n");
+
+      lines.forEach(line => {
+        if (line.includes(":")) {
+          const parts = line.split(":");
+          const name = parts[0].trim();
+          const msg = parts.slice(1).join(":").trim();
+          addMessage(name, msg);
+        } else if (line.startsWith("(")) {
+          addMessage("Система", line);
+        }
+      });
+
     } catch (e) {
-      addMessage("Система", "❌ Ошибка Groq API");
+      addMessage("Система", "❌ Ошибка подключения к Groq API");
     }
   }
 
