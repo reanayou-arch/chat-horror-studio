@@ -122,7 +122,6 @@
 <script>
 let characters = [];
 
-// ✅ Добавить персонажа
 function addCharacter() {
   const name = document.getElementById("charName").value.trim();
   const role = document.getElementById("charRole").value.trim();
@@ -140,7 +139,6 @@ function addCharacter() {
   renderCharacters();
 }
 
-// ✅ Показ персонажей
 function renderCharacters() {
   const list = document.getElementById("charList");
   list.innerHTML = "";
@@ -153,7 +151,6 @@ function renderCharacters() {
   });
 }
 
-// ✅ Сохранить историю
 function saveStory() {
   const title = document.getElementById("titleInput").value.trim();
   const description = document.getElementById("descInput").value.trim();
@@ -166,7 +163,7 @@ function saveStory() {
   let stories = JSON.parse(localStorage.getItem("stories")) || [];
 
   const newStory = {
-    id: Date.now(), // ✅ ОБЯЗАТЕЛЬНО
+    id: Date.now(),
     title,
     description,
     characters
@@ -185,7 +182,22 @@ function saveStory() {
   renderStories();
 }
 
-// ✅ Показ всех историй
+/* ✅ ГЛАВНОЕ ИСПРАВЛЕНИЕ */
+function startStory(id) {
+  const stories = JSON.parse(localStorage.getItem("stories")) || [];
+  const story = stories.find(s => s.id === id);
+
+  if (!story) {
+    alert("История не найдена!");
+    return;
+  }
+
+  /* ✅ Кладём выбранную историю в currentStory */
+  localStorage.setItem("currentStory", JSON.stringify(story));
+
+  location.href = "play.html";
+}
+
 function renderStories() {
   const storiesList = document.getElementById("storiesList");
   storiesList.innerHTML = "";
@@ -201,7 +213,7 @@ function renderStories() {
       <p>${story.description}</p>
 
       <button class="startBtn"
-        onclick="location.href='play.html?id=${story.id}'">
+        onclick="startStory(${story.id})">
         ▶ Начать
       </button>
 
@@ -215,7 +227,6 @@ function renderStories() {
   });
 }
 
-// ✅ Удалить историю
 function deleteStory(id) {
   let stories = JSON.parse(localStorage.getItem("stories")) || [];
   stories = stories.filter(s => s.id !== id);
@@ -224,7 +235,6 @@ function deleteStory(id) {
   renderStories();
 }
 
-// старт
 renderStories();
 </script>
 
