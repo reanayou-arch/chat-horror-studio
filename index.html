@@ -77,17 +77,24 @@
     .storyCard p {
       opacity: 0.7;
       font-size: 14px;
+      margin-top: 8px;
     }
 
     .startBtn {
       background: crimson;
       color: white;
       font-weight: bold;
+      margin-top: 10px;
     }
 
     .deleteBtn {
       background: rgba(255,255,255,0.08);
       color: white;
+    }
+
+    .charItem {
+      margin-bottom: 6px;
+      opacity: 0.85;
     }
   </style>
 </head>
@@ -100,12 +107,12 @@
 
   <input id="titleInput" placeholder="Название истории">
 
-  <textarea id="descInput" placeholder="Описание сюжета..."></textarea>
+  <textarea id="descInput" placeholder="Описание сюжета (для AI)..."></textarea>
 
   <h2>Персонажи</h2>
 
   <input id="charName" placeholder="Имя персонажа">
-  <input id="charRole" placeholder="Роль (мама, брат...)">
+  <input id="charRole" placeholder="Роль (подруга, брат...)">
 
   <button class="green" onclick="addCharacter()">➕ Добавить персонажа</button>
 
@@ -122,6 +129,8 @@
 <script>
 let characters = [];
 
+
+// ✅ Добавить персонажа
 function addCharacter() {
   const name = document.getElementById("charName").value.trim();
   const role = document.getElementById("charRole").value.trim();
@@ -139,24 +148,28 @@ function addCharacter() {
   renderCharacters();
 }
 
+
+// ✅ Показ персонажей
 function renderCharacters() {
   const list = document.getElementById("charList");
   list.innerHTML = "";
 
   characters.forEach(c => {
     const div = document.createElement("div");
+    div.className = "charItem";
     div.innerHTML = `👤 ${c.name} (${c.role})`;
-    div.style.marginBottom = "6px";
     list.appendChild(div);
   });
 }
 
+
+// ✅ Сохранить историю
 function saveStory() {
   const title = document.getElementById("titleInput").value.trim();
   const description = document.getElementById("descInput").value.trim();
 
   if (!title || !description) {
-    alert("Введите название и описание");
+    alert("Введите название и описание сюжета");
     return;
   }
 
@@ -173,36 +186,45 @@ function saveStory() {
 
   localStorage.setItem("stories", JSON.stringify(stories));
 
-  alert("История сохранена!");
+  alert("✅ История сохранена!");
 
   document.getElementById("titleInput").value = "";
   document.getElementById("descInput").value = "";
+
   characters = [];
   renderCharacters();
   renderStories();
 }
 
-/* ✅ ГЛАВНОЕ ИСПРАВЛЕНИЕ */
+
+// ✅ Запуск истории (ВАЖНО!)
 function startStory(id) {
   const stories = JSON.parse(localStorage.getItem("stories")) || [];
   const story = stories.find(s => s.id === id);
 
   if (!story) {
-    alert("История не найдена!");
+    alert("❌ История не найдена");
     return;
   }
 
-  /* ✅ Кладём выбранную историю в currentStory */
+  // ✅ Главный фикс
   localStorage.setItem("currentStory", JSON.stringify(story));
 
   location.href = "play.html";
 }
 
+
+// ✅ Показ историй
 function renderStories() {
   const storiesList = document.getElementById("storiesList");
   storiesList.innerHTML = "";
 
   const stories = JSON.parse(localStorage.getItem("stories")) || [];
+
+  if (stories.length === 0) {
+    storiesList.innerHTML = "<p style='opacity:0.6;'>Историй пока нет...</p>";
+    return;
+  }
 
   stories.forEach(story => {
     const card = document.createElement("div");
@@ -212,13 +234,11 @@ function renderStories() {
       <h3>${story.title}</h3>
       <p>${story.description}</p>
 
-      <button class="startBtn"
-        onclick="startStory(${story.id})">
-        ▶ Начать
+      <button class="startBtn" onclick="startStory(${story.id})">
+        ▶ Начать чат-историю
       </button>
 
-      <button class="deleteBtn"
-        onclick="deleteStory(${story.id})">
+      <button class="deleteBtn" onclick="deleteStory(${story.id})">
         🗑 Удалить
       </button>
     `;
@@ -227,14 +247,19 @@ function renderStories() {
   });
 }
 
+
+// ✅ Удалить историю
 function deleteStory(id) {
   let stories = JSON.parse(localStorage.getItem("stories")) || [];
   stories = stories.filter(s => s.id !== id);
 
   localStorage.setItem("stories", JSON.stringify(stories));
+
   renderStories();
 }
 
+
+// ✅ Старт при загрузке
 renderStories();
 </script>
 
