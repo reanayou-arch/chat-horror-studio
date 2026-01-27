@@ -17,11 +17,24 @@
     }
 
     header {
-      padding: 14px;
-      text-align: center;
-      font-size: 18px;
-      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
       background: rgba(255,255,255,0.05);
+    }
+
+    header button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    header span {
+      font-weight: bold;
+      font-size: 17px;
     }
 
     #chat {
@@ -33,7 +46,6 @@
       gap: 14px;
     }
 
-    /* сообщение */
     .msgRow {
       display: flex;
       align-items: flex-start;
@@ -41,21 +53,14 @@
       max-width: 90%;
     }
 
-    /* аватар */
     .avatar {
       width: 42px;
       height: 42px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 16px;
+      object-fit: cover;
       flex-shrink: 0;
     }
 
-    /* пузырь */
     .bubble {
       padding: 12px 14px;
       border-radius: 18px;
@@ -70,7 +75,6 @@
       margin-bottom: 4px;
     }
 
-    /* пользователь */
     .userRow {
       align-self: flex-end;
       flex-direction: row-reverse;
@@ -95,26 +99,29 @@
       outline: none;
     }
 
-    button {
+    button.send {
       width: 60px;
       margin-left: 10px;
       border: none;
       border-radius: 16px;
       background: limegreen;
       font-size: 20px;
-      cursor: pointer;
     }
   </style>
 </head>
 
 <body>
 
-<header id="title">История</header>
+<header>
+  <button onclick="goBack()">⬅</button>
+  <span id="title"></span>
+</header>
+
 <div id="chat"></div>
 
 <footer>
   <input id="text" placeholder="Сообщение...">
-  <button onclick="send()">▶</button>
+  <button class="send" onclick="send()">▶</button>
 </footer>
 
 <script>
@@ -127,47 +134,49 @@
 
   document.getElementById("title").innerText = story.title;
 
-  // список персонажей
   let characters = story.characters;
 
-  // делаем подсказку AI
-  let charactersPrompt = characters.map(c =>
-    `${c.name} — это ${c.role}`
-  ).join("\n");
+  // ✅ история переписки
+  let chatKey = "chat_" + id;
+  let savedChat = JSON.parse(localStorage.getItem(chatKey)) || [];
 
-  // аватар буква
-  function avatarLetter(name) {
-    return name.trim()[0].toUpperCase();
+  function saveChat() {
+    localStorage.setItem(chatKey, JSON.stringify(savedChat));
   }
 
-  // добавление сообщения
-  function addMessage(name, text, isUser=false) {
+  function getAvatar(name) {
+    let c = characters.find(x => x.name === name);
+    return c ? c.avatar : "";
+  }
 
+  function addMessage(name, text, isUser=false) {
     let row = document.createElement("div");
     row.className = "msgRow";
-
     if (isUser) row.classList.add("userRow");
 
-    let avatar = document.createElement("div");
-    avatar.className = "avatar";
-    avatar.innerText = avatarLetter(name);
+    let img = document.createElement("img");
+    img.className = "avatar";
+    img.src = isUser
+      ? "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+      : getAvatar(name);
 
     let bubble = document.createElement("div");
     bubble.className = "bubble";
-
     bubble.innerHTML = `
       <div class="name">${name}</div>
       <div>${text}</div>
     `;
 
-    row.appendChild(avatar);
+    row.appendChild(img);
     row.appendChild(bubble);
-
     chat.appendChild(row);
+
     chat.scrollTop = chat.scrollHeight;
+
+    savedChat.push({ name, text, isUser });
+    saveChat();
   }
 
-  // разбор ответа AI
   function splitReply(reply) {
     let lines = reply.split("\n").filter(x => x.trim() !== "");
     let result = [];
@@ -175,23 +184,15 @@
     for (let line of lines) {
       if (line.includes(":")) {
         let [n, ...t] = line.split(":");
-        result.push({
-          name: n.trim(),
-          text: t.join(":").trim()
-        });
+        result.push({ name: n.trim(), text: t.join(":").trim() });
       }
     }
 
-    if (result.length === 0)
-      result.push({ name: "Персонаж", text: reply });
-
-    return result;
+    return result.length ? result : [{ name: "Персонаж", text: reply }];
   }
 
-  // старт истории
   async function intro() {
-
-    addMessage("Система", "История начинается...", false);
+    if (savedChat.length > 0) return;
 
     let res = await fetch(API, {
       method: "POST",
@@ -199,39 +200,27 @@
       body: JSON.stringify({
         message: "Начни историю.",
         story: `
-Ты сценарист хоррор-истории.
-
 СЮЖЕТ:
 ${story.desc}
 
-ПЕРСОНАЖИ:
-${charactersPrompt}
+Персонажи:
+${characters.map(c => c.name+" — "+c.role).join("\n")}
 
-ВАЖНО:
-- отвечай ТОЛЬКО этими персонажами
-- каждый говорит строго по роли
-- максимум 1-2 предложения
-- стиль Telegram
-
-Формат ответа строго:
-Имя: короткая реплика
-Имя: короткая реплика
+Пиши коротко как Telegram.
+Формат:
+Имя: реплика
+Имя: реплика
 `
       })
     });
 
     let data = await res.json();
-
     splitReply(data.reply).forEach(m =>
       addMessage(m.name, m.text)
     );
   }
 
-  intro();
-
-  // отправка игрока
   async function send() {
-
     let text = document.getElementById("text").value.trim();
     if (!text) return;
 
@@ -244,34 +233,36 @@ ${charactersPrompt}
       body: JSON.stringify({
         message: text,
         story: `
-Ты ведёшь интерактивную хоррор-историю.
-
 СЮЖЕТ:
 ${story.desc}
 
-ПЕРСОНАЖИ:
-${charactersPrompt}
+Персонажи:
+${characters.map(c => c.name+" — "+c.role).join("\n")}
 
-ВАЖНО:
-- отвечай ТОЛЬКО этими персонажами
-- каждый говорит строго по роли
-- реплики короткие (1-2 предложения)
-- не пиши длинные абзацы
-- формат Telegram
-
-Формат ответа строго:
-Имя: короткая реплика
-Имя: короткая реплика
+Отвечай строго короткими репликами.
+Формат:
+Имя: реплика
+Имя: реплика
 `
       })
     });
 
     let data = await res.json();
-
     splitReply(data.reply).forEach(m =>
       addMessage(m.name, m.text)
     );
   }
+
+  function goBack() {
+    window.location.href = "index.html";
+  }
+
+  // ✅ восстановление переписки
+  savedChat.forEach(m =>
+    addMessage(m.name, m.text, m.isUser)
+  );
+
+  intro();
 </script>
 
 </body>
