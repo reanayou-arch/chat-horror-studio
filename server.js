@@ -2,29 +2,50 @@ import express from "express";
 import cors from "cors";
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 10000;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-
-// Проверка сервера
 app.get("/", (req, res) => {
-  res.send("✅ Groq Horror API работает!");
+  res.send("Groq Horror API работает!");
 });
 
-
-// Чат endpoint
 app.post("/chat", async (req, res) => {
   try {
-    const { messages } = req.body;
+    const { message, story, characters } = req.body;
 
-    if (!messages) {
-      return res.status(400).json({ error: "Нет messages" });
+    if (!message) {
+      return res.json({ reply: "Сообщение пустое." });
     }
 
-    const groqResponse = await fetch(
+    let charText = "";
+    if (characters && characters.length > 0) {
+      charText = characters
+        .map((c) => `${c.name} — ${c.role}`)
+        .join("\n");
+    }
+
+    const prompt = `
+Ты пишешь хоррор-историю в формате Telegram-чата.
+
+Сюжет истории:
+${story}
+
+Персонажи:
+${charText}
+
+Правила:
+- отвечай короткими сообщениями
+- отвечают разные персонажи
+- формат строго:
+Имя: текст
+
+Игрок написал: ${message}
+`;
+
+    const response = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
       {
         method: "POST",
@@ -34,36 +55,24 @@ app.post("/chat", async (req, res) => {
         },
         body: JSON.stringify({
           model: "llama3-70b-8192",
-          messages,
-          max_tokens: 200,
-          temperature: 0.9,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.8,
         }),
       }
     );
 
-    const data = await groqResponse.json();
+    const data = await response.json();
 
-    if (!data.choices || !data.choices[0]) {
-      return res.status(500).json({
-        error: "Groq не вернул ответ",
-        raw: data,
-      });
-    }
+    const reply =
+      data.choices?.[0]?.message?.content || "AI не ответил.";
 
-    res.json({
-      reply: data.choices[0].message.content,
-    });
-
+    res.json({ reply });
   } catch (err) {
-    res.status(500).json({
-      error: "Ошибка сервера Groq",
-      details: err.message,
-    });
+    console.error("Ошибка Groq:", err);
+    res.status(500).json({ reply: "Ошибка Groq API" });
   }
 });
 
-
-// Запуск
-app.listen(PORT, () => {
-  console.log("✅ Сервер запущен на порту:", PORT);
+app.listen(10000, () => {
+  console.log("Server running on port 10000");
 });
