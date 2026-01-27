@@ -6,93 +6,46 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-/* ================================
-   GROQ INIT
-================================ */
-
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
+  apiKey: process.env.GROQ_API_KEY
 });
-
-/* ================================
-   TEST ROUTE
-================================ */
-
-app.get("/", (req, res) => {
-  res.send("✅ Groq API работает!");
-});
-
-/* ================================
-   CHAT ROUTE
-================================ */
 
 app.post("/chat", async (req, res) => {
   try {
     const { message, story, characters } = req.body;
 
-    if (!message) {
-      return res.status(400).json({
-        reply: "❌ Нет сообщения от игрока",
-      });
-    }
+    const prompt = `
+Ты участвуешь в интерактивной истории.
 
-    /* ---------- Персонажи ---------- */
-    let charactersText = "";
-    if (characters && characters.length > 0) {
-      charactersText = characters
-        .map(
-          (c) =>
-            `- ${c.name} (${c.role}): характер — ${c.traits}`
-        )
-        .join("\n");
-    }
+СЮЖЕТ:
+${story}
 
-    /* ---------- System Prompt ---------- */
-    const systemPrompt = `
-Ты — интерактивный рассказчик хоррор-историй в формате переписки.
+ПЕРСОНАЖИ:
+${characters.map(c => `${c.name} (${c.role}, ${c.mood})`).join("\n")}
 
-📌 Сюжет автора:
-${story?.description || "Нет описания"}
+Игрок написал:
+"${message}"
 
-📌 Персонажи:
-${charactersText || "Нет персонажей"}
-
-Правила:
-- Пиши как чат
-- Развивай историю постепенно
-- Не решай за игрока
-- Заверши вопросом: "Что ты делаешь дальше?"
+Продолжи историю как персонаж.
 `;
 
-    /* ---------- Groq запрос ---------- */
     const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile", // ✅ РАБОТАЕТ 100%
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: message },
-      ],
+      model: "llama3-8b-8192",
+      messages: [{ role: "user", content: prompt }]
     });
 
-    const reply =
-      completion.choices?.[0]?.message?.content ||
-      "❌ Groq не вернул ответ";
+    res.json({
+      reply: completion.choices[0].message.content
+    });
 
-    res.json({ reply });
   } catch (err) {
-    console.error("🔥 Ошибка Groq:", err);
-
-    res.status(500).json({
-      reply: "❌ Ошибка Groq API. Проверь ключ и модель.",
+    console.log("Ошибка Groq:", err);
+    res.json({
+      reply: "❌ Ошибка Groq API. Проверь ключ и модель."
     });
   }
 });
 
-/* ================================
-   START SERVER
-================================ */
-
-const PORT = process.env.PORT || 10000;
-
-app.listen(PORT, () => {
-  console.log("✅ Groq Server running on port", PORT);
+app.listen(10000, () => {
+  console.log("Groq Server running on port 10000");
 });
