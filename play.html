@@ -34,7 +34,7 @@
     }
 
     .bubble {
-      max-width: 80%;
+      max-width: 82%;
       padding: 12px 14px;
       border-radius: 16px;
       font-size: 15px;
@@ -50,20 +50,20 @@
 
     .bot {
       align-self: flex-start;
-      background: rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.09);
       border-bottom-left-radius: 6px;
     }
 
     .name {
       font-size: 12px;
-      opacity: 0.7;
+      opacity: 0.75;
       margin-bottom: 4px;
     }
 
     footer {
       display: flex;
       padding: 10px;
-      background: rgba(0,0,0,0.3);
+      background: rgba(0,0,0,0.35);
     }
 
     input {
@@ -111,6 +111,7 @@
     `${c.name} (${c.role})`
   ).join(", ");
 
+  // --- Функция добавления сообщения ---
   function addMessage(name, text, cls) {
     chat.innerHTML += `
       <div class="bubble ${cls}">
@@ -121,6 +122,21 @@
     chat.scrollTop = chat.scrollHeight;
   }
 
+  // --- Парсер ответа AI: "Имя: текст" ---
+  function parseAI(reply) {
+    let parts = reply.split(":");
+
+    if (parts.length < 2) {
+      return { name: "Персонаж", text: reply };
+    }
+
+    let name = parts[0].trim();
+    let text = parts.slice(1).join(":").trim();
+
+    return { name, text };
+  }
+
+  // --- Первое вступление истории ---
   async function startIntro() {
     addMessage("Система", "История начинается...", "bot");
 
@@ -131,17 +147,25 @@
         message: "Начни историю вступлением как рассказчик.",
         story: `
 Сюжет: ${story.desc}
+
 Персонажи: ${charactersText}
+
+ВАЖНО:
+- Первый ответ должен быть строго:
+Рассказчик: (вступление)
 `
       })
     });
 
     const data = await res.json();
-    addMessage("Рассказчик", data.reply, "bot");
+    const parsed = parseAI(data.reply);
+
+    addMessage(parsed.name, parsed.text, "bot");
   }
 
   startIntro();
 
+  // --- Отправка сообщения игрока ---
   async function send() {
     let text = document.getElementById("text").value.trim();
     if (!text) return;
@@ -156,14 +180,23 @@
         message: text,
         story: `
 Сюжет: ${story.desc}
+
 Персонажи: ${charactersText}
-Отвечай от подходящего персонажа.
+
+ВАЖНО:
+- Всегда отвечай строго так:
+
+ИмяПерсонажа: текст ответа
+
+- Выбирай персонажа автоматически по ситуации.
 `
       })
     });
 
     const data = await res.json();
-    addMessage("Персонаж", data.reply, "bot");
+    const parsed = parseAI(data.reply);
+
+    addMessage(parsed.name, parsed.text, "bot");
   }
 </script>
 
