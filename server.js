@@ -8,38 +8,43 @@ app.use(express.json());
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-/* ✅ Проверка ключа */
-if (!GROQ_API_KEY) {
-  console.error("❌ GROQ_API_KEY не задан в Render Environment!");
-}
-
-/* ✅ Главная страница */
+// ✅ Проверка работы сервера
 app.get("/", (req, res) => {
   res.send("Groq Horror API работает!");
 });
 
-/* ✅ Чат */
+// ✅ Главный чат endpoint
 app.post("/chat", async (req, res) => {
   try {
-    const { message, story, characters } = req.body;
 
-    if (!message) {
-      return res.json({ reply: "Сообщение пустое." });
-    }
+    // ✅ Теперь сервер понимает оба варианта:
+    const { message, story, characters, messages } = req.body;
 
-    /* ✅ Формируем персонажей */
-    let charText = "";
-    if (characters && characters.length > 0) {
-      charText = characters
-        .map((c) => `${c.name} — ${c.role}`)
-        .join("\n");
-    }
+    let finalPrompt = "";
 
-    /* ✅ Промпт */
-    const prompt = `
+    // ----------------------------
+    // ✅ Вариант 1: если пришёл messages (правильно для истории)
+    // ----------------------------
+    if (messages && Array.isArray(messages)) {
+      finalPrompt = messages.map(m => m.content).join("\n");
+
+    } 
+    // ----------------------------
+    // ✅ Вариант 2: если пришёл message + story (старый формат)
+    // ----------------------------
+    else if (message) {
+
+      let charText = "";
+      if (characters && characters.length > 0) {
+        charText = characters
+          .map((c) => `${c.name} — ${c.role}`)
+          .join("\n");
+      }
+
+      finalPrompt = `
 Ты пишешь хоррор-историю в формате Telegram-чата.
 
-Сюжет:
+Сюжет истории:
 ${story}
 
 Персонажи:
@@ -47,16 +52,20 @@ ${charText}
 
 Правила:
 - отвечай короткими сообщениями
-- отвечают разные персонажи строго по ролям
+- отвечают разные персонажи
 - формат строго:
 Имя: текст
-- действия отдельно:
-(персонаж делает что-то)
 
 Игрок написал: ${message}
-`;
+      `;
+    }
 
-    /* ✅ Запрос в Groq */
+    // ❌ Если вообще ничего не пришло
+    else {
+      return res.json({ reply: "Сообщение пустое." });
+    }
+
+    // ✅ Запрос в Groq
     const response = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
       {
@@ -68,46 +77,29 @@ ${charText}
         body: JSON.stringify({
           model: "llama3-70b-8192",
           messages: [
-            {
-              role: "user",
-              content: prompt,
-            },
+            { role: "user", content: finalPrompt }
           ],
-          temperature: 0.8,
-          max_tokens: 200,
+          temperature: 0.85,
         }),
       }
     );
 
-    /* ✅ Если Groq вернул ошибку */
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ Groq API Error:", errorText);
-
-      return res.json({
-        reply: "Ошибка Groq: API вернул ошибку.",
-      });
-    }
-
     const data = await response.json();
 
     const reply =
-      data.choices?.[0]?.message?.content?.trim() ||
-      "AI не ответил.";
+      data.choices?.[0]?.message?.content || "AI не ответил.";
 
     res.json({ reply });
-  } catch (err) {
-    console.error("❌ Ошибка сервера:", err);
 
-    res.status(500).json({
-      reply: "Ошибка сервера Groq API",
-    });
+  } catch (err) {
+    console.error("Ошибка Groq says:", err);
+    res.status(500).json({ reply: "Ошибка Groq API" });
   }
 });
 
-/* ✅ Render порт */
+// ✅ Render порт
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
-  console.log("✅ Server running on port", PORT);
+  console.log("Server running on port", PORT);
 });
