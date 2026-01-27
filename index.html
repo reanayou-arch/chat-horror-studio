@@ -63,18 +63,10 @@
     }
 
     .charItem img {
-      width: 35px;
-      height: 35px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
       object-fit: cover;
-    }
-
-    .charItem button {
-      width: 40px;
-      padding: 6px;
-      font-size: 14px;
-      border-radius: 10px;
-      margin-left: auto;
     }
 
     .storyCard {
@@ -92,11 +84,6 @@
     .row button {
       flex: 1;
     }
-
-    /* редактор */
-    #editor {
-      display: none;
-    }
   </style>
 </head>
 
@@ -105,12 +92,13 @@
 <h1>📖 Панель автора</h1>
 
 <!-- СОЗДАНИЕ -->
-<div class="panel" id="creator">
+<div class="panel">
 
   <input id="title" placeholder="Название истории">
   <textarea id="desc" placeholder="Описание сюжета (для AI)..."></textarea>
 
   <h3>Персонажи</h3>
+
   <input id="charName" placeholder="Имя персонажа">
   <input id="charRole" placeholder="Роль (мама, брат...)">
   <input id="charAvatar" type="file" accept="image/*">
@@ -123,22 +111,6 @@
 
 </div>
 
-<!-- РЕДАКТОР -->
-<div class="panel" id="editor">
-
-  <h2>✏ Редактирование</h2>
-
-  <input id="editTitle">
-  <textarea id="editDesc"></textarea>
-
-  <h3>Персонажи</h3>
-  <div id="editChars"></div>
-
-  <button class="blue" onclick="saveEdit()">💾 Сохранить изменения</button>
-  <button class="gray" onclick="closeEditor()">⬅ Назад</button>
-
-</div>
-
 <!-- СПИСОК -->
 <div class="panel">
   <h2>Ваши истории</h2>
@@ -147,20 +119,35 @@
 
 <script>
   let characters = [];
-  let editStoryId = null;
+
+  /* ---------- Добавление персонажа ---------- */
 
   function addChar() {
     let name = charName.value.trim();
     let role = charRole.value.trim();
     let file = charAvatar.files[0];
 
-    if (!name || !role) return alert("Заполни имя и роль!");
-    if (!file) return alert("Загрузи аватарку!");
+    if (!name || !role) {
+      alert("Заполни имя и роль!");
+      return;
+    }
+
+    if (!file) {
+      alert("Выбери аватарку!");
+      return;
+    }
 
     let reader = new FileReader();
+
     reader.onload = function () {
-      characters.push({ name, role, avatar: reader.result });
+      characters.push({
+        name,
+        role,
+        avatar: reader.result
+      });
+
       renderChars();
+
       charName.value = "";
       charRole.value = "";
       charAvatar.value = "";
@@ -171,21 +158,32 @@
 
   function renderChars() {
     charList.innerHTML = "";
+
     characters.forEach(c => {
       charList.innerHTML += `
         <div class="charItem">
           <img src="${c.avatar}">
-          ${c.name} (${c.role})
+          <b>${c.name}</b> (${c.role})
         </div>
       `;
     });
   }
 
+  /* ---------- Сохранение истории ---------- */
+
   function saveStory() {
     let title = document.getElementById("title").value.trim();
     let desc = document.getElementById("desc").value.trim();
 
-    if (!title || !desc) return alert("Заполни всё!");
+    if (!title || !desc) {
+      alert("Заполни название и описание!");
+      return;
+    }
+
+    if (characters.length === 0) {
+      alert("Добавь хотя бы одного персонажа!");
+      return;
+    }
 
     let stories = JSON.parse(localStorage.getItem("stories")) || [];
 
@@ -197,82 +195,33 @@
     });
 
     localStorage.setItem("stories", JSON.stringify(stories));
-    alert("История сохранена!");
-    location.reload();
+
+    alert("✅ История сохранена!");
+
+    /* Очистка формы */
+    document.getElementById("title").value = "";
+    document.getElementById("desc").value = "";
+    characters = [];
+    renderChars();
+
+    renderStories();
   }
 
-  function deleteStory(id) {
-    let stories = JSON.parse(localStorage.getItem("stories")) || [];
-    stories = stories.filter(s => s.id !== id);
-    localStorage.setItem("stories", JSON.stringify(stories));
-    location.reload();
-  }
+  /* ---------- Играть ---------- */
 
   function startStory(id) {
     localStorage.setItem("currentStoryId", id);
     window.location.href = "play.html";
   }
 
-  /* ---------- РЕДАКТОР ---------- */
-
-  function openEditor(id) {
+  function deleteStory(id) {
     let stories = JSON.parse(localStorage.getItem("stories")) || [];
-    let story = stories.find(s => s.id === id);
-
-    editStoryId = id;
-
-    document.getElementById("creator").style.display = "none";
-    document.getElementById("editor").style.display = "block";
-
-    editTitle.value = story.title;
-    editDesc.value = story.desc;
-
-    renderEditChars(story.characters);
-  }
-
-  function renderEditChars(chars) {
-    editChars.innerHTML = "";
-
-    chars.forEach((c, i) => {
-      editChars.innerHTML += `
-        <div class="charItem">
-          <img src="${c.avatar}">
-          ${c.name} (${c.role})
-          <button class="red" onclick="removeChar(${i})">❌</button>
-        </div>
-      `;
-    });
-  }
-
-  function removeChar(index) {
-    let stories = JSON.parse(localStorage.getItem("stories")) || [];
-    let story = stories.find(s => s.id === editStoryId);
-
-    story.characters.splice(index, 1);
-
+    stories = stories.filter(s => s.id !== id);
     localStorage.setItem("stories", JSON.stringify(stories));
-    renderEditChars(story.characters);
+    renderStories();
   }
 
-  function saveEdit() {
-    let stories = JSON.parse(localStorage.getItem("stories")) || [];
-    let story = stories.find(s => s.id === editStoryId);
-
-    story.title = editTitle.value.trim();
-    story.desc = editDesc.value.trim();
-
-    localStorage.setItem("stories", JSON.stringify(stories));
-
-    alert("Изменения сохранены!");
-    location.reload();
-  }
-
-  function closeEditor() {
-    document.getElementById("creator").style.display = "block";
-    document.getElementById("editor").style.display = "none";
-  }
-
-  /* ---------- СПИСОК ---------- */
+  /* ---------- Список ---------- */
 
   function renderStories() {
     let stories = JSON.parse(localStorage.getItem("stories")) || [];
@@ -288,8 +237,7 @@
 
           <div class="row">
             <button class="green" onclick="startStory(${story.id})">▶ Играть</button>
-            <button class="blue" onclick="openEditor(${story.id})">✏</button>
-            <button class="red" onclick="deleteStory(${story.id})">🗑</button>
+            <button class="red" onclick="deleteStory(${story.id})">🗑 Удалить</button>
           </div>
         </div>
       `;
