@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chat Story Studio</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Story Author Panel</title>
 
   <style>
     body {
@@ -22,19 +22,19 @@
 
     .box {
       width: 90%;
-      max-width: 500px;
+      max-width: 520px;
       margin: auto;
       background: rgba(255,255,255,0.05);
       padding: 20px;
       border-radius: 20px;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
 
     input, textarea {
       width: 100%;
-      padding: 15px;
+      padding: 14px;
       margin-top: 10px;
-      border-radius: 15px;
+      border-radius: 14px;
       border: none;
       font-size: 16px;
       outline: none;
@@ -42,38 +42,37 @@
 
     button {
       width: 100%;
-      padding: 15px;
+      padding: 14px;
       margin-top: 15px;
       border: none;
-      border-radius: 15px;
-      font-size: 18px;
+      border-radius: 14px;
+      font-size: 17px;
       font-weight: bold;
       cursor: pointer;
     }
 
-    .save {
-      background: #2a78ff;
-      color: white;
-    }
+    .save { background: #2a78ff; color: white; }
+    .addChar { background: #00aa66; color: white; }
+    .start { background: crimson; color: white; }
 
     .story-card {
       background: rgba(255,255,255,0.06);
       padding: 15px;
-      border-radius: 20px;
+      border-radius: 18px;
       margin-top: 15px;
     }
 
-    .start {
-      background: crimson;
-      color: white;
-      margin-top: 10px;
+    .char {
+      margin-top: 8px;
+      font-size: 14px;
+      opacity: 0.85;
     }
   </style>
 </head>
 
 <body>
 
-<header>📖 Chat Story Studio</header>
+<header>📖 Панель автора</header>
 
 <div class="box">
   <h2>Создать историю</h2>
@@ -85,29 +84,28 @@
 </div>
 
 <div class="box">
+  <h2>Добавить персонажа</h2>
+
+  <input id="charName" placeholder="Имя персонажа">
+  <input id="charRole" placeholder="Роль (друг, мама...)">
+  <input id="charMood" placeholder="Характер (строгий, весёлый...)">
+  <input id="charAvatar" placeholder="Ссылка на аватар (можно пусто)">
+
+  <button class="addChar" onclick="addCharacter()">➕ Добавить</button>
+</div>
+
+<div class="box">
   <h2>Ваши истории</h2>
   <div id="stories"></div>
 </div>
 
 <script>
-  function loadStories() {
-    const stories = JSON.parse(localStorage.getItem("stories")) || [];
-    const list = document.getElementById("stories");
+  function getStories() {
+    return JSON.parse(localStorage.getItem("stories")) || [];
+  }
 
-    list.innerHTML = "";
-
-    stories.forEach((story, index) => {
-      const card = document.createElement("div");
-      card.className = "story-card";
-
-      card.innerHTML = `
-        <h3>${story.title}</h3>
-        <p>${story.plot}</p>
-        <button class="start" onclick="startStory(${index})">▶ Начать</button>
-      `;
-
-      list.appendChild(card);
-    });
+  function saveStories(stories) {
+    localStorage.setItem("stories", JSON.stringify(stories));
   }
 
   function saveStory() {
@@ -115,11 +113,11 @@
     const plot = document.getElementById("plot").value.trim();
 
     if (!title || !plot) {
-      alert("Заполни название и сюжет!");
+      alert("Заполни название и описание!");
       return;
     }
 
-    const stories = JSON.parse(localStorage.getItem("stories")) || [];
+    const stories = getStories();
 
     stories.push({
       title,
@@ -127,7 +125,7 @@
       characters: []
     });
 
-    localStorage.setItem("stories", JSON.stringify(stories));
+    saveStories(stories);
 
     document.getElementById("title").value = "";
     document.getElementById("plot").value = "";
@@ -136,9 +134,60 @@
     alert("✅ История сохранена!");
   }
 
+  function addCharacter() {
+    const name = document.getElementById("charName").value.trim();
+    const role = document.getElementById("charRole").value.trim();
+    const mood = document.getElementById("charMood").value.trim();
+    const avatar = document.getElementById("charAvatar").value.trim();
+
+    const stories = getStories();
+    if (stories.length === 0) {
+      alert("Сначала создай историю!");
+      return;
+    }
+
+    stories[stories.length - 1].characters.push({
+      name,
+      role,
+      mood,
+      avatar
+    });
+
+    saveStories(stories);
+
+    document.getElementById("charName").value = "";
+    document.getElementById("charRole").value = "";
+    document.getElementById("charMood").value = "";
+    document.getElementById("charAvatar").value = "";
+
+    loadStories();
+    alert("✅ Персонаж добавлен!");
+  }
+
   function startStory(index) {
     localStorage.setItem("currentStory", index);
     window.location.href = "play.html";
+  }
+
+  function loadStories() {
+    const stories = getStories();
+    const list = document.getElementById("stories");
+    list.innerHTML = "";
+
+    stories.forEach((story, index) => {
+      let chars = story.characters.map(c =>
+        `<div class="char">👤 ${c.name} (${c.role})</div>`
+      ).join("");
+
+      list.innerHTML += `
+        <div class="story-card">
+          <h3>${story.title}</h3>
+          <p>${story.plot}</p>
+          ${chars}
+          <button class="start" onclick="startStory(${index})">▶ Начать</button>
+        </div>
+      `;
+    });
   }
 
   loadStories();
