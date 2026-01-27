@@ -5,62 +5,65 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-/* ✅ Проверка что сервер жив */
+const PORT = process.env.PORT || 10000;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+
+
+// Проверка сервера
 app.get("/", (req, res) => {
-  res.send("Groq Horror API работает!");
+  res.send("✅ Groq Horror API работает!");
 });
 
-/* ✅ Главный чат endpoint */
+
+// Чат endpoint
 app.post("/chat", async (req, res) => {
   try {
-    const { message, story, characters } = req.body;
+    const { messages } = req.body;
 
-    const prompt = `
-Ты участвуешь в хоррор-чате Telegram.
+    if (!messages) {
+      return res.status(400).json({ error: "Нет messages" });
+    }
 
-Сюжет:
-${story}
+    const groqResponse = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "llama3-70b-8192",
+          messages,
+          max_tokens: 200,
+          temperature: 0.9,
+        }),
+      }
+    );
 
-Персонажи:
-${characters.map(c => `${c.name} (${c.role})`).join(", ")}
+    const data = await groqResponse.json();
 
-Игрок написал: "${message}"
+    if (!data.choices || !data.choices[0]) {
+      return res.status(500).json({
+        error: "Groq не вернул ответ",
+        raw: data,
+      });
+    }
 
-Ответь короткими репликами (1–2 предложения).
-Формат:
-
-Имя: текст
-
-Если действие:
-
-(описание действия)
-`;
-
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "llama3-8b-8192",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.8
-      })
+    res.json({
+      reply: data.choices[0].message.content,
     });
 
-    const data = await response.json();
-
-    const reply = data.choices?.[0]?.message?.content;
-
-    res.json({ reply });
-
   } catch (err) {
-    console.error("Groq ошибка:", err);
-    res.json({ reply: null, error: err.message });
+    res.status(500).json({
+      error: "Ошибка сервера Groq",
+      details: err.message,
+    });
   }
 });
 
-/* ✅ Render порт */
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log("Server running on port", PORT));
+
+// Запуск
+app.listen(PORT, () => {
+  console.log("✅ Сервер запущен на порту:", PORT);
+});
