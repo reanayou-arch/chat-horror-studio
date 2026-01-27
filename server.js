@@ -6,88 +6,66 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 🔑 Groq API Key
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-const MODEL = "llama3-70b-8192";
-
-/* ✅ Проверка что сервер жив */
+// ✅ Главная страница Render (чтобы не было Not Found)
 app.get("/", (req, res) => {
   res.send("✅ Chat Horror Server работает!");
 });
 
-/* ✅ Чтобы /chat не показывал Not Found */
-app.get("/chat", (req, res) => {
-  res.send("✅ Use POST /chat");
-});
-
-/* ✅ Главный маршрут для игры */
+// ✅ Основной чат API
 app.post("/chat", async (req, res) => {
   try {
-    const { message, story, characters } = req.body;
+    const { messages, characters } = req.body;
 
-    if (!message) {
-      return res.json({ reply: "Нет сообщения." });
+    if (!messages) {
+      return res.status(400).json({ error: "Нет messages" });
     }
 
+    // 🎭 Персонажи (роли)
+    let charText = "";
+    if (characters && characters.length > 0) {
+      charText =
+        "\nПерсонажи истории:\n" +
+        characters.map((c) => `- ${c.name}: ${c.role}`).join("\n");
+    }
+
+    // 🧠 System Prompt (строго короткий Telegram стиль)
     const systemPrompt = `
-Ты пишешь хоррор-чат как Telegram.
-Пиши короткими репликами.
-Персонажи отвечают строго по ролям.
+Ты — AI ведущий хоррор-истории в формате Telegram-чата.
+Пиши ТОЛЬКО короткими сообщениями, максимум 1–2 предложения.
 
-Сюжет:
-${story}
-
-Персонажи:
-${characters
-  .map((c) => `${c.name} — ${c.role}`)
-  .join("\n")}
-
-Формат ответа строго JSON:
-
-{
- "name": "Имя персонажа",
- "text": "короткая реплика"
-}
+Правила:
+- Персонажи отвечают строго по своим ролям.
+- Реплики должны быть короткими.
+- Если персонаж делает действие — отдельным сообщением в скобках.
+- Не пиши длинные простыни текста.
+${charText}
 `;
 
+    // Groq запрос
     const completion = await groq.chat.completions.create({
-      model: MODEL,
+      model: "llama3-70b-8192",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: message },
+        ...messages,
       ],
-      temperature: 0.8,
-      max_tokens: 200,
     });
 
-    let raw = completion.choices[0].message.content;
+    const reply =
+      completion.choices?.[0]?.message?.content || "Нет ответа";
 
-    let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      parsed = {
-        name: "Персонаж",
-        text: raw.slice(0, 200),
-      };
-    }
-
-    res.json({
-      reply: parsed.text,
-      character: parsed.name,
-    });
+    res.json({ reply });
   } catch (err) {
-    console.error("❌ Ошибка Groq:", err.message);
-    res.status(500).json({
-      reply: "Ошибка Groq API",
-      error: err.message,
-    });
+    console.error("Ошибка Groq:", err);
+    res.status(500).json({ error: "Ошибка Groq API" });
   }
 });
 
-/* ✅ Render порт */
+// ✅ Render Port
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log("✅ Groq Server running on port", PORT);
