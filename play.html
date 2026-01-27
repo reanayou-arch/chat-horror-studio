@@ -3,25 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>История</title>
+  <title>Чат истории</title>
 
   <style>
     body {
       margin: 0;
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       background: linear-gradient(#050d18, #061c30);
-      color: white;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      color: white;
     }
 
     header {
-      padding: 15px;
       text-align: center;
+      padding: 14px;
       font-size: 20px;
       font-weight: bold;
-      background: rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.04);
     }
 
     #chat {
@@ -30,36 +30,49 @@
       padding: 15px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
-    .bubble {
-      max-width: 82%;
-      padding: 12px 14px;
-      border-radius: 16px;
+    /* 💬 Сообщение */
+    .msg {
+      max-width: 75%;
+      padding: 10px 12px;
+      border-radius: 18px;
       font-size: 15px;
       line-height: 1.4;
+      display: flex;
+      flex-direction: column;
+      word-wrap: break-word;
+    }
+
+    /* 👤 Имя */
+    .msg .name {
+      font-size: 12px;
+      opacity: 0.65;
+      margin-bottom: 4px;
+    }
+
+    /* 📩 Текст */
+    .msg .text {
+      font-size: 15px;
       white-space: pre-wrap;
     }
 
+    /* Игрок */
     .user {
       align-self: flex-end;
       background: #1e90ff;
       border-bottom-right-radius: 6px;
     }
 
+    /* Персонаж */
     .bot {
       align-self: flex-start;
-      background: rgba(255,255,255,0.09);
+      background: rgba(255,255,255,0.10);
       border-bottom-left-radius: 6px;
     }
 
-    .name {
-      font-size: 12px;
-      opacity: 0.75;
-      margin-bottom: 4px;
-    }
-
+    /* Поле ввода */
     footer {
       display: flex;
       padding: 10px;
@@ -69,23 +82,24 @@
     input {
       flex: 1;
       padding: 14px;
-      border-radius: 14px;
-      border: none;
       font-size: 16px;
+      border: none;
       outline: none;
+      border-radius: 16px;
     }
 
     button {
       margin-left: 10px;
-      padding: 14px 18px;
+      width: 52px;
       border: none;
-      border-radius: 14px;
+      border-radius: 16px;
       background: limegreen;
-      font-size: 18px;
+      font-size: 20px;
       cursor: pointer;
     }
   </style>
 </head>
+
 <body>
 
 <header id="title">История</header>
@@ -111,18 +125,21 @@
     `${c.name} (${c.role})`
   ).join(", ");
 
-  // --- Функция добавления сообщения ---
+  // ✅ Добавить сообщение в чат
   function addMessage(name, text, cls) {
-    chat.innerHTML += `
-      <div class="bubble ${cls}">
-        <div class="name">${name}</div>
-        ${text}
-      </div>
+    const div = document.createElement("div");
+    div.className = "msg " + cls;
+
+    div.innerHTML = `
+      <div class="name">${name}</div>
+      <div class="text">${text}</div>
     `;
+
+    chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
   }
 
-  // --- Парсер ответа AI: "Имя: текст" ---
+  // ✅ Парсинг AI ответа "Имя: текст"
   function parseAI(reply) {
     let parts = reply.split(":");
 
@@ -136,7 +153,7 @@
     return { name, text };
   }
 
-  // --- Первое вступление истории ---
+  // ✅ Вступление истории
   async function startIntro() {
     addMessage("Система", "История начинается...", "bot");
 
@@ -144,15 +161,14 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: "Начни историю вступлением как рассказчик.",
+        message: "Начни историю красивым вступлением как рассказчик.",
         story: `
 Сюжет: ${story.desc}
 
 Персонажи: ${charactersText}
 
-ВАЖНО:
-- Первый ответ должен быть строго:
-Рассказчик: (вступление)
+ФОРМАТ:
+Рассказчик: текст вступления
 `
       })
     });
@@ -165,7 +181,7 @@
 
   startIntro();
 
-  // --- Отправка сообщения игрока ---
+  // ✅ Отправка сообщения игрока
   async function send() {
     let text = document.getElementById("text").value.trim();
     if (!text) return;
@@ -184,11 +200,8 @@
 Персонажи: ${charactersText}
 
 ВАЖНО:
-- Всегда отвечай строго так:
-
-ИмяПерсонажа: текст ответа
-
-- Выбирай персонажа автоматически по ситуации.
+Всегда отвечай строго так:
+ИмяПерсонажа: текст
 `
       })
     });
