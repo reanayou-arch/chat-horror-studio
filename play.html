@@ -1,39 +1,39 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Игра</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Чат истории</title>
 
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: linear-gradient(to bottom, #06121f, #02070c);
+      background: radial-gradient(circle at top, #081a2b, #02060c);
       color: white;
     }
 
     header {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 15px;
+      padding: 14px;
+      gap: 12px;
     }
 
-    .back-btn {
-      background: rgba(255,255,255,0.08);
+    .back {
+      background: rgba(255,255,255,0.06);
       border: none;
-      color: white;
       padding: 10px 16px;
       border-radius: 14px;
       font-size: 16px;
+      color: white;
       cursor: pointer;
     }
 
     .title {
       flex: 1;
       text-align: center;
-      font-size: 28px;
+      font-size: 26px;
       font-weight: bold;
     }
 
@@ -42,28 +42,27 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
-      padding-bottom: 90px;
+      padding-bottom: 100px;
     }
 
-    .msg {
+    .bubble {
       max-width: 78%;
       padding: 14px;
       border-radius: 18px;
       background: rgba(255,255,255,0.06);
-      font-size: 16px;
       line-height: 1.4;
-      word-wrap: break-word;
+      font-size: 16px;
     }
 
-    .msg.you {
+    .bubble.ai {
+      align-self: flex-start;
+      border-bottom-left-radius: 6px;
+    }
+
+    .bubble.you {
       align-self: flex-end;
       background: #1e6eff;
       border-bottom-right-radius: 6px;
-    }
-
-    .msg.ai {
-      align-self: flex-start;
-      border-bottom-left-radius: 6px;
     }
 
     .name {
@@ -72,34 +71,34 @@
       margin-bottom: 5px;
     }
 
-    .input-box {
+    .input {
       position: fixed;
       bottom: 0;
       left: 0;
       width: 100%;
-      background: rgba(0,0,0,0.3);
-      backdrop-filter: blur(10px);
-      padding: 12px;
       display: flex;
       gap: 10px;
+      padding: 12px;
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(10px);
     }
 
     input {
       flex: 1;
-      padding: 14px;
-      border-radius: 18px;
       border: none;
-      font-size: 16px;
       outline: none;
+      padding: 14px;
+      font-size: 16px;
+      border-radius: 18px;
     }
 
     button.send {
-      width: 52px;
-      height: 52px;
+      width: 54px;
+      height: 54px;
       border-radius: 16px;
       border: none;
-      font-size: 20px;
       cursor: pointer;
+      font-size: 20px;
       background: #22c55e;
       color: black;
     }
@@ -109,123 +108,129 @@
 <body>
 
 <header>
-  <button class="back-btn" onclick="goBack()">← Назад</button>
+  <button class="back" onclick="location.href='index.html'">← Назад</button>
   <div class="title" id="storyTitle">История</div>
 </header>
 
 <div id="chat"></div>
 
-<div class="input-box">
-  <input id="text" placeholder="Сообщение..." autocomplete="off">
-  <button class="send" onclick="send()">➤</button>
+<div class="input">
+  <input id="msgInput" placeholder="Сообщение..." />
+  <button class="send" onclick="sendMessage()">➤</button>
 </div>
 
 <script>
-  const API_URL = "https://chat-horror-api.onrender.com/chat";
+const API_URL = "https://chat-horror-api.onrender.com/chat";
 
-  const chat = document.getElementById("chat");
-  const input = document.getElementById("text");
+const chat = document.getElementById("chat");
+const input = document.getElementById("msgInput");
 
-  let story = JSON.parse(localStorage.getItem("currentStory"));
 
-  if (!story) {
-    alert("История не найдена!");
-    location.href = "index.html";
+// ✅ Получаем ID истории из URL
+const params = new URLSearchParams(location.search);
+const storyId = params.get("id");
+
+const stories = JSON.parse(localStorage.getItem("stories")) || [];
+const story = stories.find(s => s.id == storyId);
+
+if (!story) {
+  alert("История не найдена!");
+  location.href = "index.html";
+}
+
+
+// ✅ Заголовок
+document.getElementById("storyTitle").innerText = story.title;
+
+
+// ✅ Персонажи
+const characters = story.characters || [];
+
+
+// ✅ Добавление сообщения
+function addMessage(name, text, type) {
+  const div = document.createElement("div");
+  div.className = "bubble " + type;
+
+  div.innerHTML = `
+    <div class="name">${name}</div>
+    ${text}
+  `;
+
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+
+// ✅ Старт истории
+addMessage("Система", "История начинается...", "ai");
+
+if (story.description) {
+  addMessage("Персонаж", story.description, "ai");
+}
+
+
+// ✅ AI отвечает коротко
+function shorten(text) {
+  if (text.length > 220) {
+    return text.slice(0, 220) + "...";
+  }
+  return text;
+}
+
+
+// ✅ Выбор персонажа строго по роли
+function pickCharacter() {
+  if (characters.length === 0) {
+    return { name: "Персонаж", role: "участник" };
   }
 
-  document.getElementById("storyTitle").innerText = story.title;
+  return characters[Math.floor(Math.random() * characters.length)];
+}
 
-  // --- Персонажи
-  let characters = story.characters || [];
 
-  // --- Добавление сообщений
-  function addMessage(name, text, type) {
-    const div = document.createElement("div");
-    div.className = "msg " + type;
+// ✅ Отправка
+async function sendMessage() {
+  const userText = input.value.trim();
+  if (!userText) return;
 
-    div.innerHTML = `
-      <div class="name">${name}</div>
-      ${text}
-    `;
+  addMessage("Вы", userText, "you");
+  input.value = "";
 
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-  }
+  const speaker = pickCharacter();
 
-  // --- Начало истории
-  addMessage("Система", "История начинается...", "ai");
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: userText,
+        story: story.description,
+        characters: characters,
+        speaker: speaker
+      })
+    });
 
-  if (story.description) {
-    addMessage("Персонаж", story.description, "ai");
-  }
+    const data = await res.json();
 
-  // --- Назад
-  function goBack() {
-    location.href = "index.html";
-  }
+    let reply = data.reply;
 
-  // --- Отправка игрока
-  async function send() {
-    const text = input.value.trim();
-    if (!text) return;
-
-    addMessage("Вы", text, "you");
-    input.value = "";
-
-    await aiReply(text);
-  }
-
-  // --- AI ответ
-  async function aiReply(userText) {
-
-    // если слишком коротко
-    if (userText.length < 2) {
-      addMessage("Персонаж", "Скажи чуть подробнее…", "ai");
-      return;
+    if (!reply || reply.trim() === "") {
+      reply = "…";
     }
 
-    let speaker = characters[Math.floor(Math.random() * characters.length)];
+    addMessage(speaker.name, shorten(reply), "ai");
 
-    if (!speaker) {
-      speaker = { name: "Персонаж", role: "участник истории" };
-    }
-
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userText,
-          story: story.description,
-          character: speaker
-        })
-      });
-
-      const data = await res.json();
-
-      let answer = data.reply;
-
-      // ✅ FIX: никогда не будет undefined
-      if (!answer || answer.trim() === "") {
-        answer = "…";
-      }
-
-      // короткие ответы как Telegram
-      if (answer.length > 250) {
-        answer = answer.slice(0, 250) + "...";
-      }
-
-      addMessage(speaker.name, answer, "ai");
-
-    } catch (err) {
-      addMessage("Ошибка", "❌ Сервер недоступен", "ai");
-    }
+  } catch (e) {
+    addMessage("Ошибка", "❌ Сервер недоступен", "ai");
   }
+}
 
-  // Enter = отправка
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") send();
-  });
+
+// Enter
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter") sendMessage();
+});
 </script>
 
 </body>
