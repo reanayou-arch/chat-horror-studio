@@ -31,6 +31,7 @@
       border-radius: 18px;
       max-width: 80%;
       position: relative;
+      white-space: pre-wrap;
     }
 
     .bot {
@@ -104,10 +105,16 @@
   const index = localStorage.getItem("currentStory");
 
   const story = stories[index];
-
   document.getElementById("storyTitle").innerText = story.title;
 
   const chat = document.getElementById("chat");
+
+  // 🔥 память чата
+  let history = JSON.parse(localStorage.getItem("chatHistory_" + index)) || [];
+
+  function saveHistory() {
+    localStorage.setItem("chatHistory_" + index, JSON.stringify(history));
+  }
 
   function addMessage(text, sender="bot", name="Персонаж", avatar="") {
     const div = document.createElement("div");
@@ -130,69 +137,106 @@
     chat.scrollTop = chat.scrollHeight;
   }
 
-  // ✅ стартовое сообщение от ИИ
-  async function startIntro() {
-    const chars = story.characters.map(c =>
-      `${c.name} (${c.role}, характер: ${c.mood})`
-    ).join(", ");
-
-    const prompt = `
-Ты — интерактивный рассказчик.
-История: ${story.plot}
-
-Персонажи: ${chars}
-
-Начни историю первым сообщением.
-Опиши обстановку и кто рядом.
-Пиши как персонаж, выбирая кто говорит.
-Формат:
-Имя: текст
-`;
-
-    const res = await fetch("https://chat-horror-api.onrender.com/chat", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({message: prompt})
+  // ✅ загрузка старого чата
+  function loadChat() {
+    history.forEach(msg => {
+      addMessage(msg.text, msg.sender, msg.name, msg.avatar);
     });
-
-    const data = await res.json();
-
-    renderBotReply(data.reply);
   }
 
+  // 🎭 вывод ответа персонажа
   function renderBotReply(reply) {
-    // пытаемся разделить "Имя: текст"
     let name = "Персонаж";
     let text = reply;
 
     if (reply.includes(":")) {
-      name = reply.split(":")[0];
-      text = reply.slice(name.length + 1);
+      name = reply.split(":")[0].trim();
+      text = reply.slice(name.length + 1).trim();
     }
 
     const char = story.characters.find(c => c.name === name);
 
-    addMessage(text, "bot", name, char?.avatar || "");
+    const avatar = char?.avatar || "";
+
+    addMessage(text, "bot", name, avatar);
+
+    history.push({ sender: "bot", name, text, avatar });
+    saveHistory();
   }
 
+  // 🧠 формирование полного промпта
+  function buildPrompt(userMessage) {
+    const chars = story.characters.map(c =>
+      `${c.name} (${c.role}, характер: ${c.mood})`
+    ).join(", ");
+
+    let chatLog = history.map(m =>
+      `${m.name}: ${m.text}`
+    ).join("\n");
+
+    return `
+Ты — интерактивный рассказчик хоррор-истории.
+
+СЮЖЕТ:
+${story.plot}
+
+ПЕРСОНАЖИ:
+${chars}
+
+ИСТОРИЯ ЧАТА:
+${chatLog}
+
+НОВОЕ СООБЩЕНИЕ ИГРОКА:
+Игрок: ${userMessage}
+
+Ответь от лица одного из персонажей.
+Формат строго:
+Имя: текст
+`;
+  }
+
+  // ✅ стартовое сообщение
+  async function startIntro() {
+    if (history.length > 0) return;
+
+    const introPrompt = buildPrompt("Начни историю первым сообщением.");
+
+    const res = await fetch("https://chat-horror-api.onrender.com/chat", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ message: introPrompt })
+    });
+
+    const data = await res.json();
+    renderBotReply(data.reply);
+  }
+
+  // ▶ отправка игрока
   async function send() {
     const input = document.getElementById("text");
     const msg = input.value.trim();
     if (!msg) return;
 
-    addMessage(msg, "user");
+    addMessage(msg, "user", "Вы");
+
+    history.push({ sender: "user", name: "Игрок", text: msg, avatar: "" });
+    saveHistory();
+
     input.value = "";
+
+    const fullPrompt = buildPrompt(msg);
 
     const res = await fetch("https://chat-horror-api.onrender.com/chat", {
       method: "POST",
       headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({message: msg})
+      body: JSON.stringify({ message: fullPrompt })
     });
 
     const data = await res.json();
     renderBotReply(data.reply);
   }
 
+  loadChat();
   startIntro();
 </script>
 
